@@ -10,19 +10,27 @@ library(dplyr) # data handling
 
 summary(sample_sums(subsetG))
 otu_tab <- t(abundances(subsetG))
+# rarefaction curve
 p <- vegan::rarecurve(otu_tab,
                       step = 50, label = FALSE,
                       sample = min(rowSums(otu_tab),
                                    col = "blue", cex = 0.6))
+# samples plateau so sufficient sequencing depth
 
 #remove samples with lower sequencing depth?
-#set.seed()
+
+set.seed(1337)
 
 ps0.rar <- rarefy_even_depth(subsetG, sample.size = 46731)
+
+# no data removed? function not advisable generally > ?rarefy_even_depth()
+
 
 ps0.rar
 
 plot_taxa_prevalence(ps0.rar, "Phylum")
+
+plot_taxa_prevalence(subsetG, "Phylum")
 
 hmp.div <- microbiome::alpha(ps0.rar, index = "all")
 
@@ -35,10 +43,17 @@ hmp.div$sam_name <- rownames(hmp.div)
 div.df <- merge(hmp.div,hmp.meta, by = "sam_name")
 colnames(div.df)
 
+div.df$Cox[div.df$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+div.df$Cox[div.df$Cox == "narasin(monteban)"] = "Monteban"
+div.df$Cox[div.df$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
+
+div.df$Cox
+
+
 p <- ggboxplot(div.df,
-               x = "Farm2",
+               x = "Cox",
                y = "diversity_shannon",
-               fill = "Farm2",
+               fill = "Cox",
                palette = "jco")
 
 
@@ -46,31 +61,37 @@ p <- p + rotate_x_text()
 p
 
 
-div.df2 <- div.df[, c("Farm2", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage")]
+div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage")]
 
-colnames(div.df2) <- c("Farm", "Inverse Simpson", "Gini-Simpson", "Shannon", "Fisher", "Coverage")
+
+div.df3 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage", "evenness_pielou")]
+div.df$evenness_pielou
+
+colnames(div.df3) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Fisher", "Coverage", "Pielou")
+
+
+#div_df_melt <- reshape2::melt(div.df3)
 
 div_df_melt <- reshape2::melt(div.df2)
 
 
-p <- ggboxplot(div_df_melt, x = "Farm", y = "value",
-               fill = "Farm",
+p <- ggboxplot(div_df_melt, x = "Agent", y = "value",
+               fill = "Agent",
                palette = "jco",
                legend= "right",
                facet.by = "variable",
                scales = "free")
 
 p <- p + rotate_x_text()
-
 p <- p + rremove("x.text")
 
 p
 
-div.df2
-div_df_melt
+
 #ggsave("../Metataxonomic/Figures/Diversities.pdf", height = 4, width = 10)
 
-lev <- levels(div_df_melt$Variable)
+#lev <- levels(div_df_melt$Variable)
+lev = c("Maxiban","Sacox","Monteban","None")
 L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
 pval <- list(
   cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
@@ -100,13 +121,22 @@ df.pd <- pd(t(ps0.rar.asvtab), ps0.rar.tree,include.root=T)
 datatable(df.pd)
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
+
+
+hmp.meta$Cox[hmp.meta$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+hmp.meta$Cox[hmp.meta$Cox == "narasin(monteban)"] = "Monteban"
+hmp.meta$Cox[hmp.meta$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
+
+hmp.meta$Cox
+
+
 pd.plot <- ggboxplot(hmp.meta,
-                     x = "Farm2",
+                     x = "Cox",
                      y = "Phylogenetic_Diversity",
-                     fill = "Farm2",
+                     fill = "Cox",
                      palette = "jco",
                      ylab = "Phylogenetic Diversity",
-                     xlab = "Body site",
+                     xlab = "Antimicrobial",
                      legend = "right"
 )
 pd.plot <- pd.plot + rotate_x_text()
@@ -119,6 +149,8 @@ pd.plot + stat_compare_means(
     symbols = c("****", "***", "**", "*", "n.s")
   )
 )
+
+#rarefy to equal library size or not?
 
 lib.div <- microbiome::alpha(subsetG, index = "all")
 lib.div2 <- richness(subsetG)
@@ -140,3 +172,10 @@ p3 <- ggscatter(lib.div, "Observed", "ReadsPerSample",
   )
 
 ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
+
+aov_test=aov(hmp.meta$Phylogenetic_Diversity ~ Hatchery, data = hmp.meta)
+
+hsd_test <- TukeyHSD(aov_test)
+
+HSD.test(aov_test, "Hatchery", group=T)$groups
+colnames(hmp.meta)
