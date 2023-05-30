@@ -10,6 +10,7 @@ library(dplyr) # data handling
 
 summary(sample_sums(subsetG))
 otu_tab <- t(abundances(subsetG))
+
 # rarefaction curve
 p <- vegan::rarecurve(otu_tab,
                       step = 50, label = FALSE,
@@ -29,6 +30,9 @@ ps0.rar <- rarefy_even_depth(subsetG, sample.size = 46731)
 ps0.rar
 
 plot_taxa_prevalence(ps0.rar, "Phylum")
+
+plot_taxa_prevalence(subsetG, "Phylum")
+
 
 hmp.div <- microbiome::alpha(ps0.rar, index = "all")
 
