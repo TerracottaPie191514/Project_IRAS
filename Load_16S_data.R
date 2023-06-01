@@ -74,7 +74,7 @@ datatable(tax_table(subsetG))
 #phy_tree()    Phylogenetic Tree: [ 1536 tips and 1535 internal nodes ]
 
 rank_names(subsetG)
-get_taxa_unique(subsetG, "Phylum")
+sort(get_taxa_unique(subsetG, "Genus"))
 sample_sums(subsetG)
 sample_variables(subsetG)
 

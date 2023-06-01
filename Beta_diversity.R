@@ -1,3 +1,7 @@
+library(microbiomeDataSets)
+
+
+# Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 
 filt.rar=data.frame(otu_table(subsetG))
 
@@ -92,21 +96,6 @@ permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
 
 
 
-permanova_age <- adonis(t(unifrac.dist) ~ Age, data = metadf, permutations = 9999)
-
-permanova_age <- adonis(t(assay(tse2, "relabundance")) ~ Age, data = metadf, permutations = 9999)
-
-permanova_age <- adonis(unifrac.dist ~ Age, data = metadf, permutations = 9999)
-
-permanova_age$coef.sites
-
-permanova_AB
-permanova_farm
-permanova_cox
-permanova_researcher
-permanova_LitterType
-
-library(microbiomeDataSets)
 
 coef <- coefficients(permanova_age)["Age1",]
 top.coef <- sort(head(coef[rev(order(abs(coef)))],20))

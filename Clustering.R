@@ -11,9 +11,10 @@ library(patchwork)
 library(pheatmap)
 library(ggplot2)
 library(biclust)
+library(ecodist)
+library(sechm)
 
-install.packages("miaViz")
-
+# used the following guide: https://microbiome.github.io/OMA/clustering.html
 
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
 
@@ -76,16 +77,16 @@ plotReducedDim(tse, "MDS", colour_by = "Farm2")
 
   
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
-tse <- agglomerateByRank(tse, rank = "Phylum", agglomerateTree = TRUE)
+tse <- agglomerateByRank(tse, rank = "Genus", agglomerateTree = TRUE)
 tse_dmn <- mia::runDMN(tse, name = "DMN", k = 1:7)
 tse_dmn
 names(metadata(tse_dmn))
 getDMN(tse_dmn)
 miaViz::plotDMNFit(tse_dmn, type = "laplace")
-getBestDMNFit(tse_dmn, type = "laplace")
+getBestDMNFit(tse_dmn, type = "laplace") # Gives 3! as best fit for genus level data
 dmn_group <- calculateDMNgroup(tse_dmn,
                                variable = "Age", assay.type = "counts",
-                               k = 2, seed = .Machine$integer.max
+                               k = 3, seed = .Machine$integer.max
 )
 
 dmn_group <- calculateDMNgroup(tse_dmn,
@@ -98,7 +99,7 @@ DirichletMultinomial::mixturewt(getBestDMNFit(tse_dmn))
 head(DirichletMultinomial::mixture(getBestDMNFit(tse_dmn)))
 head(DirichletMultinomial::fitted(getBestDMNFit(tse_dmn)))
 prob <- DirichletMultinomial::mixture(getBestDMNFit(tse_dmn))
-colnames(prob) <- c("comp1", "comp2")
+colnames(prob) <- c("comp1", "comp2", "comp3")
 vec <- colnames(prob)[max.col(prob, ties.method = "first")]
 
 assay(tse, "pseudo") <- assay(tse, "counts") + 1
@@ -107,9 +108,7 @@ tse <- transformCounts(tse, "relabundance", method = "clr")
 df <- calculateMDS(tse, assay.type = "clr", method = "euclidean")
 euclidean_pcoa_df <- data.frame(
   pcoa1 = df[, 1],
-  pcoa2 = df[, 2],
-  pcoa3 = df[, 3],
-  pcoa4 = df[, 4]
+  pcoa2 = df[, 2]
 )
 euclidean_dmm_pcoa_df <- cbind(euclidean_pcoa_df,
                                dmm_component = vec
@@ -117,13 +116,11 @@ euclidean_dmm_pcoa_df <- cbind(euclidean_pcoa_df,
 
 euclidean_dmm_pcoa_df
 
-test = cbind(euclidean_dmm_pcoa_df,metadf)
-
 euclidean_dmm_plot <- ggplot(
-  data = test,
+  data = euclidean_dmm_pcoa_df,
   aes(
     x = pcoa1, y = pcoa2,
-    color = FeedType
+    color = dmm_component
   )
 ) +
   geom_point() +
@@ -341,3 +338,159 @@ pheatmap(corr,
          annotation_row = bicluster_rows,
          annotation_colors = annotation_colors
 )
+
+#Jaccard
+dis <- vegan::vegdist(t(assays(tse)$counts), method = "jaccard")
+jaccard_pcoa <- ecodist::pco(dis)
+
+
+
+tse_order <- agglomerateByRank(tse,
+                               rank = "Order",
+                               onRankOnly = TRUE)
+tse_order <- transformCounts(tse_order,
+                             assay.type = "counts",
+                             method = "relabundance")
+top_taxa <- getTopTaxa(tse_order,
+                       top = 10,
+                       assay.type = "relabundance")
+order_renamed <- lapply(rowData(tse_order)$Order,
+                        function(x){if (x %in% top_taxa) {x} else {"Other"}})
+rowData(tse_order)$Order <- as.character(order_renamed)
+miaViz::plotAbundance(tse_order,
+              assay.type = "relabundance",
+              rank = "Class",
+              order_rank_by = "abund",
+              order_sample_by = "c__Clostridia")
+
+
+tse_order$Farm2 = as.factor(tse_order$Farm2)
+tse_order$AB = as.factor(tse_order$AB)
+
+
+plots <- miaViz::plotAbundance(tse_order,
+                       assay.type = "relabundance",
+                       rank = "Order",
+                       order_rank_by = "abund",
+#                       order_sample_by = "o__Clostridiales",
+                        order_sample_by = "AB",
+                       features = "AB")
+
+plots[[1]] <- plots[[1]] +
+  theme(legend.key.size = unit(0.3, 'cm'),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(size = 8))
+plots[[2]] <- plots[[2]] +
+  theme(legend.key.height = unit(0.3, 'cm'),
+        legend.key.width = unit(0.3, 'cm'),
+        legend.text = element_text(size = 6),
+        legend.title = element_text(size = 8),
+        legend.direction = "vertical")
+
+legend <- wrap_plots(as_ggplot(get_legend(plots[[1]])), as_ggplot(get_legend(plots[[2]])), ncol = 1) 
+plots[[1]] <- plots[[1]] + theme(legend.position = "none")
+plots[[2]] <- plots[[2]] + theme(legend.position = "none", axis.title.x=element_blank()) 
+
+plot <- wrap_plots(plots[[2]], plots[[1]], ncol = 1, heights = c(2, 10))
+wrap_plots(plot, legend, nrow = 1, widths = c(2, 1))
+
+
+
+
+tse_phylum <- agglomerateByRank(tse,
+                                rank = "Phylum",
+                                onRankOnly = TRUE)
+
+tse_phylum <- transformCounts(tse_phylum, MARGIN = "samples", method = "clr", assay.type = "counts", pseudocount=1)
+tse_phylum <- transformCounts(tse_phylum, assay.type = "clr",
+                              MARGIN = "features", 
+                              method = "z", name = "clr_z")
+
+
+top_taxa <- getTopTaxa(tse_phylum, top = 20)
+tse_phylum <- tse_phylum[top_taxa, ]
+
+mat <- assay(tse_phylum, "clr_z")
+
+pheatmap(mat)
+
+
+taxa_hclust <- hclust(dist(mat), method = "complete")
+
+# Creates a phylogenetic tree
+taxa_tree <- as.phylo(taxa_hclust)
+
+# Plot taxa tree
+taxa_tree <- ggtree(taxa_tree) + 
+  theme(plot.margin=margin(0,0,0,0)) # removes margins
+
+# Get order of taxa in plot
+taxa_ordered <- get_taxa_name(taxa_tree)
+
+taxa_clusters <- cutree(tree = taxa_hclust, k = 3)
+
+# Converts into data frame
+taxa_clusters <- data.frame(clusters = taxa_clusters)
+taxa_clusters$clusters <- factor(taxa_clusters$clusters)
+
+# Order data so that it's same as in phylo tree
+taxa_clusters <- taxa_clusters[taxa_ordered, , drop = FALSE] 
+
+# Prints taxa and their clusters
+taxa_clusters
+
+rowData(tse_phylum)$clusters <- taxa_clusters[order(match(rownames(taxa_clusters), rownames(tse_phylum))), ]
+
+# Prints taxa and their clusters
+rowData(tse_phylum)$clusters
+
+
+sample_hclust <- hclust(dist(t(mat)), method = "complete")
+
+# Creates a phylogenetic tree
+sample_tree <- as.phylo(sample_hclust)
+
+# Plot sample tree
+sample_tree <- ggtree(sample_tree) + layout_dendrogram() + 
+  theme(plot.margin=margin(0,0,0,0)) # removes margins
+
+# Get order of samples in plot
+samples_ordered <- rev(get_taxa_name(sample_tree))
+
+# to view the tree, run
+sample_tree
+
+# Creates clusters
+sample_clusters <- factor(cutree(tree = sample_hclust, k = 3))
+
+# Converts into data frame
+sample_data <- data.frame(clusters = sample_clusters)
+
+# Order data so that it's same as in phylo tree
+sample_data <- sample_data[samples_ordered, , drop = FALSE] 
+
+# Order data based on 
+tse_phylum <- tse_phylum[ , rownames(sample_data)]
+
+# Add sample type data
+sample_data$sample_types <- colData(tse_phylum)$Farm2
+
+sample_data
+
+
+breaks <- seq(-ceiling(max(abs(mat))), ceiling(max(abs(mat))), 
+              length.out = ifelse( max(abs(mat))>5, 2*ceiling(max(abs(mat))), 10 ) )
+colors <- colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks)-1)
+
+pheatmap(mat, annotation_row = taxa_clusters, 
+         annotation_col = sample_data,
+         breaks = breaks,
+         color = colors)
+
+sechm(tse_phylum, 
+      features = rownames(tse_phylum), 
+      assayName = "clr", 
+      do.scale = TRUE, 
+      top_annotation = c("AB"), 
+      gaps_at = "AB",
+      cluster_cols = TRUE, cluster_rows = TRUE)

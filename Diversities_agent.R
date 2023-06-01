@@ -7,6 +7,8 @@ library(DT) # interactive tables in html and markdown
 library(data.table) # alternative to data.frame
 library(dplyr) # data handling
 
+# used the following guide: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/alpha-diversities.html
+
 
 summary(sample_sums(subsetG))
 otu_tab <- t(abundances(subsetG))
