@@ -1,5 +1,3 @@
-
-
 ##  For Martijn Melissen - April 2023
 ### ImportData subset n=120 field study, n=6 per farm
 #### n=120 METAGENOMIC and 16S
@@ -24,6 +22,7 @@ library(pheatmap)
 library(readr)
 library(picante)
 library(nlme)
+library(scales)
 
 ### create phyloseq object, https://joey711.github.io/phyloseq/
 pseq <- read_phyloseq(otu.file= "ASV.biom1",
@@ -36,6 +35,7 @@ treefile <- read_tree("all_asvTREE.tree")
 ps <-merge_phyloseq(pseq, treefile)
 ps
 
+sort(sample_sums(ps))
 #> ps
 #phyloseq-class experiment-level object
 #otu_table()   OTU Table:         [ 6249 taxa and 180 samples ]
@@ -53,7 +53,7 @@ subset <- subset_taxa(ps, Domain !="NA")
 subset <- subset_taxa(subset,Family !="f__Mitochondria=*")
 subset <- subset_taxa(subset,Family !="f__Mitochondria")
 subset <- subset_taxa(subset, Order !="o__Chloroplast")
-#do you know why? filter out plant data and eukaryotes? food ? or algae and stuff living? aren't they cyanobacteria?
+#do you know why? filter out plant and eukaryote data that had chloroplast and mitochondrium bacterial dna
 subset <- subset_taxa(subset, Domain!="k__Archaea") # can be discussed about it
 
 ### remove taxa with zeros
@@ -78,7 +78,6 @@ sort(get_taxa_unique(subsetG, "Genus"))
 sample_sums(subsetG)
 sample_variables(subsetG)
 
-install.packages("scales")
 
 plot_phyloseq(subsetG)
 sample_variables(subsetG)
@@ -86,25 +85,4 @@ sample_variables(subsetG)
 sample_data(subsetG)$Cluster = as.factor(sample_data(subsetG)$Cluster)
 
 
-plot_tree(subsetG, "treeonly", nodeplotblank)
-
-plot_net(subsetG, maxdist= 0.82, color ="Cluster", point_label = "Sname")
-
-for (i in sample_variables(subsetG)){
-  #print(unique(sample_data(subsetG)$i))
-  print(i)
-}
-
-
 unique(sample_data(subsetG)$Cox)
-
-nw <- make_network(subsetG, max.dist=.82)
-plot_network(nw, subsetG, color = "Cluster")
-
-
-
-
-pseq <- read_phyloseq(otu.file= "ASV.biom1",
-                      taxonomy.file = NULL,
-                      metadata.file = "MetaData.csv",
-                      type="biom", sep =";" )

@@ -14,7 +14,7 @@ library(biclust)
 library(ecodist)
 library(sechm)
 
-# used the following guide: https://microbiome.github.io/OMA/clustering.html
+# used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
 
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
 

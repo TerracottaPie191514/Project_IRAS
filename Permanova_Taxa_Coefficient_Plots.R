@@ -1,6 +1,6 @@
 library(vegan)
 
-# Used the following guide: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/multivariate-comparisons-of-microbial-community-composition.html
+# Used the following guides: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/multivariate-comparisons-of-microbial-community-composition.html, https://microbiome.github.io/course_2022_radboud/beta-diversity-demo.html
 
 
 tse_genus <- agglomerateByRank(tse_genus, "Genus")
