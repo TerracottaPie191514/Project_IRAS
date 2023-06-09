@@ -9,17 +9,15 @@
 ####              https://f1000research.com/articles/5-1791
 
 #### Load packages
-library(microbiome) # data analysis and visualisation
-library(phyloseq) # also the basis of data object. Data analysis and visualisation
-library(microbiomeutilities) # some utility tools
-library(RColorBrewer) # nice color options
-library(ggpubr) # publication quality figures, based on ggplot2
-library(DT) # interactive tables in html and markdown
-library(data.table) # alternative to data.frame
-library(dplyr) # data handling
+library(microbiome)
+library(phyloseq)
+library(microbiomeutilities)
 library(RColorBrewer)
+library(ggpubr)
+library(DT)
+library(data.table)
+library(tidyverse)
 library(pheatmap)
-library(readr)
 library(picante)
 library(nlme)
 library(scales)
@@ -79,10 +77,23 @@ sample_sums(subsetG)
 sample_variables(subsetG)
 
 
-plot_phyloseq(subsetG)
-sample_variables(subsetG)
+taxa_names(subsetG)
 
-sample_data(subsetG)$Cluster = as.factor(sample_data(subsetG)$Cluster)
+subset16S = subsetG
+subset16S@tax_table = gsub("=\\*|~\\*|\\*|<empty>","",subsetG@tax_table)
+
+datatable(tax_table(subset16S))
+
+
+
+sample_variables(subset16S)
+
+sample_data(subset16S)$Cluster = as.factor(sample_data(subset16S)$Cluster)
+sample_data(subset16S)$FlockSize = as.factor(sample_data(subset16S)$FlockSize)
+sample_data(subset16S)$AgeParentStock = as.factor(sample_data(subset16S)$AgeParentStock)
+sample_data(subset16S)$Age = as.factor(sample_data(subset16S)$Age)
+sample_data(subset16S)$LibraryNumber = as.factor(sample_data(subset16S)$LibraryNumber)
+
 
 
 unique(sample_data(subsetG)$Cox)

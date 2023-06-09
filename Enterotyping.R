@@ -86,6 +86,8 @@ noise.removal <- function(dataframe, percent=0.01, top=NULL){
 }
 
 data.denoized=noise.removal(GA, percent=0.01)
+# denoising only advisable for short read sequencing
+#obs.pca=dudi.pca(data.frame(t(data.denoized)), scannf=F, nf=10)
 
 
 obs.pca=dudi.pca(data.frame(t(GA)), scannf=F, nf=10)

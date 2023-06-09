@@ -90,17 +90,9 @@ p <- p + rotate_x_text()
 p
 
 
+div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Chao1", "Coverage", "Pielou")
 
-div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage")]
-
-
-div.df3 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage", "evenness_pielou")]
-div.df$evenness_pielou
-
-colnames(div.df3) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Fisher", "Coverage", "Pielou")
-
-
-#div_df_melt <- reshape2::melt(div.df3)
 
 div_df_melt <- reshape2::melt(div.df2)
 
@@ -118,7 +110,7 @@ p <- p + rremove("x.text")
 p
 
 
-#ggsave("../Metataxonomic/Figures/Diversities.pdf", height = 4, width = 10)
+# with significance
 
 #lev <- levels(div_df_melt$Variable)
 lev = c("Maxiban","Sacox","Monteban","None")
@@ -140,11 +132,11 @@ p2 <- p + stat_compare_means(
 
 p2
 
-ps0.rar.asvtab <- as.data.frame(ps0.rar@otu_table)
-ps0.rar.tree <- ps0.rar@phy_tree
-ps0.rar@phy_tree
+subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
+subset_mg.tree <- subset_mg@phy_tree
+subset_mg@phy_tree
 
-df.pd <- pd(t(ps0.rar.asvtab), ps0.rar.tree,include.root=T)
+df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
 
 datatable(df.pd)
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
@@ -191,9 +183,10 @@ p <- p + rotate_x_text()
 p
 
 
-div.df2 <- div.df[, c("Age", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage")]
 
-colnames(div.df2) <- c("Age", "Inverse Simpson", "Gini-Simpson", "Shannon", "Fisher", "Coverage")
+div.df2 <- div.df[, c("Age", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Age", "Inverse Simpson", "Gini-Simpson", "Shannon", "Chao1", "Coverage", "Pielou")
+
 
 div_df_melt <- reshape2::melt(div.df2)
 
@@ -211,7 +204,7 @@ p <- p + rremove("x.text")
 p
 
 
-#ggsave("../Metataxonomic/Figures/Diversities.pdf", height = 4, width = 10)
+# with significance
 
 #lev <- levels(div_df_melt$Variable)
 lev = c("14","35")
@@ -233,15 +226,16 @@ p2 <- p + stat_compare_means(
 
 p2
 
+subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
+subset_mg.tree <- subset_mg@phy_tree
+subset_mg@phy_tree
 
-ps0.rar.asvtab <- as.data.frame(ps0.rar@otu_table)
-ps0.rar.tree <- ps0.rar@phy_tree
-ps0.rar@phy_tree
-
-df.pd <- pd(t(ps0.rar.asvtab), ps0.rar.tree,include.root=T)
+df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
 
 datatable(df.pd)
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
+
+
 
 pd.plot <- ggboxplot(hmp.meta,
                      x = "Age",
@@ -277,9 +271,9 @@ p <- p + rotate_x_text()
 p
 
 
-div.df2 <- div.df[, c("Farm2", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "diversity_fisher", "diversity_coverage")]
+div.df2 <- div.df[, c("Farm2", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Farm", "Inverse Simpson", "Gini-Simpson", "Shannon", "Chao1", "Coverage", "Pielou")
 
-colnames(div.df2) <- c("Farm", "Inverse Simpson", "Gini-Simpson", "Shannon", "Fisher", "Coverage")
 
 div_df_melt <- reshape2::melt(div.df2)
 
@@ -297,7 +291,7 @@ p <- p + rremove("x.text")
 p
 
 
-#ggsave("../Metataxonomic/Figures/Diversities.pdf", height = 4, width = 10)
+# with significance
 
 #lev <- levels(div_df_melt$Variable)
 lev = c("Farm1","Farm2","Farm3","Farm4")
@@ -319,15 +313,15 @@ p2 <- p + stat_compare_means(
 
 p2
 
+subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
+subset_mg.tree <- subset_mg@phy_tree
+subset_mg@phy_tree
 
-ps0.rar.asvtab <- as.data.frame(ps0.rar@otu_table)
-ps0.rar.tree <- ps0.rar@phy_tree
-ps0.rar@phy_tree
-
-df.pd <- pd(t(ps0.rar.asvtab), ps0.rar.tree,include.root=T)
+df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
 
 datatable(df.pd)
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
+
 
 pd.plot <- ggboxplot(hmp.meta,
                      x = "Farm2",
@@ -349,4 +343,77 @@ pd.plot + stat_compare_means(
   )
 )
 
+# based on AB
+
+div.df2 <- div.df[, c("AB", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Antibiotics", "Inverse Simpson", "Gini-Simpson", "Shannon", "Chao1", "Coverage", "Pielou")
+
+
+div_df_melt <- reshape2::melt(div.df2)
+
+
+p <- ggboxplot(div_df_melt, x = "Antibiotics", y = "value",
+               fill = "Antibiotics",
+               palette = "jco",
+               legend= "right",
+               facet.by = "variable",
+               scales = "free")
+
+p <- p + rotate_x_text()
+p <- p + rremove("x.text")
+
+p
+
+
+# with significance
+
+#lev <- levels(div_df_melt$Variable)
+lev = c("no","yes")
+L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+pval <- list(
+  cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+  symbols = c("****", "***", "**", "*", "n.s")
+)
+
+p2 <- p + stat_compare_means(
+  comparisons = L.pairs,
+  label = "p.signif",
+  symnum.args = list(
+    cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+    symbols = c("****", "***", "**", "*", "n.s")
+  )
+)
+
+
+p2
+
+subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
+subset_mg.tree <- subset_mg@phy_tree
+subset_mg@phy_tree
+
+df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
+
+datatable(df.pd)
+hmp.meta$Phylogenetic_Diversity <- df.pd$PD
+
+
+pd.plot <- ggboxplot(hmp.meta,
+                     x = "AB",
+                     y = "Phylogenetic_Diversity",
+                     fill = "AB",
+                     palette = "jco",
+                     ylab = "Phylogenetic Diversity",
+                     xlab = "Antibiotics Applied",
+                     legend = "right"
+)
+pd.plot <- pd.plot + rotate_x_text()
+
+pd.plot + stat_compare_means(
+  comparisons = L.pairs,
+  label = "p.signif",
+  symnum.args = list(
+    cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
+    symbols = c("****", "***", "**", "*", "n.s")
+  )
+)
 
