@@ -16,14 +16,14 @@ library(sechm)
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
 
 tse <- transformCounts(tse, method = "relabundance")
 
 x <- t(assay(tse, "relabundance"))
 hclust.out <- clusterRows(x, HclustParam())
 colData(tse)$clusters <- hclust.out
-hclust.out
+hclust.out$clusters
 
 tse <- runMDS(tse,
               assay.type = "relabundance",
@@ -44,29 +44,61 @@ pam.out <- clusterCells(tse,
                         BLUSPARAM = PamParam(centers = 5)
 )
 
+pam.out
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+
+tse <- transformCounts(tse, method = "relabundance")
+
 assay <- assay(tse, "relabundance")
 assay <- t(assay)
-diss <- vegdist(assay, method = "bray")
-hc <- hclust(diss, method = "complete")
-dendro <- as.dendrogram(hc)
-plot(dendro)
 
-res <- NbClust(
-  diss = diss, distance = NULL, method = "ward.D2",
+diss_bray <- vegdist(assay, method = "bray")
+hc_bray <- hclust(diss_bray, method = "complete")
+
+res_bray <- NbClust(
+  diss = diss_bray, distance = NULL, method = "kmeans",
   index = "silhouette"
 )
-res$Best.nc
-cutree(hc, k = 2)
-dendro
+res_bray$Best.nc
+#cutree(hc, k = 3)
+#dendro
 
-dend <- color_branches(dendro, k = 2)
-labels(dend) <- NULL
-plot(dend)
+#dend <- color_branches(dendro, k = 2)
+#labels(dend) <- NULL
+#plot(dend)
 
 # Hierarchical clustering lijkt onzinnig, 2 clusters en gebruikt gewoon de root
 
-diss <- as.matrix(diss)
-fviz_nbclust(diss, kmeans, method = "silhouette")
+
+# Trying out different methods for finding optimal number of clusters:
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+
+tse <- transformCounts(tse, method = "relabundance")
+
+assay <- assay(tse, "relabundance")
+assay <- t(assay)
+
+diss_jaccard <- vegdist(assay, method = "jaccard")
+
+res_jaccard <- NbClust(
+  diss = diss_jaccard, distance = NULL, method = "complete",
+  index = "mcclain"
+)
+res_jaccard$Best.nc
+
+
+res_jaccard <- NbClust(data = diss_jaccard,
+  diss = diss_jaccard, distance = NULL, method = "kmeans",
+  index = "all"
+)
+res_jaccard$Best.nc
+res_jaccard$Best.nc
+
+
+diss_jaccard <- as.matrix(diss_jaccard)
+fviz_nbclust(diss_jaccard, kmeans, method = "silhouette")
 
 set.seed(1337)
 km <- kmeans(diss, 2, nstart = 25)
@@ -76,7 +108,7 @@ plotReducedDim(tse, "MDS", colour_by = "Farm2")
 
 
   
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
 tse <- agglomerateByRank(tse, rank = "Genus", agglomerateTree = TRUE)
 tse_dmn <- mia::runDMN(tse, name = "DMN", k = 1:7)
 tse_dmn
@@ -133,7 +165,7 @@ euclidean_dmm_plot <- ggplot(
 
 euclidean_dmm_plot
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
 tse <- transformCounts(tse, method = "rclr")
 tse <- runUMAP(tse, name = "UMAP", assay.type = "rclr")
 k <- c(2, 3, 5, 10)
