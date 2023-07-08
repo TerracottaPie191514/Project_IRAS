@@ -19,7 +19,7 @@ p <- vegan::rarecurve(otu_tab,
                       step = 50, label = FALSE,
                       sample = min(rowSums(otu_tab),
                                    col = "blue", cex = 0.6))
-# samples plateau so sufficient sequencing depth
+# most samples are closing in on a plateau so fairly deep sequencing depth
 
 #rarefy to equal library size or not?
 
@@ -45,7 +45,7 @@ p3 <- ggscatter(lib.div, "Observed", "ReadsPerSample",
 ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
 
 
-#remove samples with lower sequencing depth? not necessary for 16S dataset
+#remove samples with lower sequencing depth? -> big question
 
 #set.seed(1337)
 
@@ -58,7 +58,7 @@ ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
 
 #plot_taxa_prevalence(ps0.rar, "Phylum")
 
-plot_taxa_prevalence(subsetMG, "Phylum")
+plot_taxa_prevalence(subsetMG, "AMR_class_primary")
 
 hmp.div <- microbiome::alpha(subsetMG, index = "all") # use ps0.rar if rarefied
 

@@ -1,4 +1,6 @@
 library(microbiomeDataSets)
+library(scater)
+library(mia)
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 
@@ -84,6 +86,7 @@ wt.unifrac <- wt.unifrac + theme_classic() + scale_color_brewer("AB", palette = 
 print(wt.unifrac)
 
 
+ps1.rel <- microbiome::transform(subsetMG, "compositional")
 
 metadf <- data.frame(sample_data(ps1.rel))
 

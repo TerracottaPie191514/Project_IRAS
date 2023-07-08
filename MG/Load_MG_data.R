@@ -1,13 +1,3 @@
-##  For Martijn Melissen - April 2023
-### ImportData subset n=120 field study, n=6 per farm
-#### n=120 METAGENOMIC and 16S
-
-#### background:  https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/introduction.html   #Introbackground
-####              https://microbiome.github.io/OMA/    # chapter 10, clustering
-#### Preprocces NG-tax:
-####              https://www.frontiersin.org/articles/10.3389/fgene.2019.01366/full
-####              https://f1000research.com/articles/5-1791
-
 #### Load packages
 library(microbiome)
 library(phyloseq)
@@ -21,79 +11,40 @@ library(pheatmap)
 library(picante)
 library(nlme)
 library(scales)
-
-### create phyloseq object, https://joey711.github.io/phyloseq/
-pseq <- read_phyloseq(otu.file= "ASV.biom1",
-                      taxonomy.file = NULL,
-                      metadata.file = "MetaData.csv",
-                      type="biom", sep =";" )
+library(readxl)
 
 
-treefile <- read_tree("all_asvTREE.tree")
-ps <-merge_phyloseq(pseq, treefile)
-ps
+### loading a subset of metagenomic data into phyloseq format
+subsetMG= readRDS("Phyloseq") # this reads a pre-existing phyloseq object containing OTU and tax tables
 
-sort(sample_sums(ps))
-#> ps
-#phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 6249 taxa and 180 samples ]
-#sample_data() Sample Data:       [ 180 samples by 26 sample variables ]
-#tax_table()   Taxonomy Table:    [ 6249 taxa by 6 taxonomic ranks ]
-#phy_tree()    Phylogenetic Tree: [ 6249 tips and 6248 internal nodes ]
+# reading in and combining metadata from 16S and metagenomic origins, adding missing underscores
+firm_names = read_excel("./Metagenomic/FIRM_MetaNames.xlsx")
+meta_data = read.csv("MetaData.csv", header = TRUE, sep = ",")
+meta_data_MG = left_join(firm_names, meta_data, by="SampleID")
+meta_data_MG$Raw_data_name = sub(" ", "_", meta_data_MG$Raw_data_name)
 
-### 180 samples
+# subsetting the metadata and using the metagenomic names ([Ff]irm*) as rownames
+meta_data_MG_subset <- meta_data_MG[ meta_data_MG$Raw_data_name %in% colnames(subsetMG@otu_table), ]
+meta_data_MG_subset %<>% remove_rownames %>% column_to_rownames(var="Raw_data_name")
 
-### overview data
-datatable(tax_table(ps))
+# creating tree and making phyloseq components, adding tree and sample data components to phyloseq
+random_tree = rtree(ntaxa(subsetMG), rooted=TRUE, tip.label=taxa_names(subsetMG))
+meta_data_MG_subset = sample_data(meta_data_MG_subset)
+subsetMG = merge_phyloseq(subsetMG, meta_data_MG_subset, random_tree)
+class(subsetMG)
 
-### remove some contamination
-subset <- subset_taxa(ps, Domain !="NA")
-subset <- subset_taxa(subset,Family !="f__Mitochondria=*")
-subset <- subset_taxa(subset,Family !="f__Mitochondria")
-subset <- subset_taxa(subset, Order !="o__Chloroplast")
-#do you know why? filter out plant and eukaryote data that had chloroplast and mitochondrium bacterial dna
-subset <- subset_taxa(subset, Domain!="k__Archaea") # can be discussed about it
+# overview data
+datatable(tax_table(subsetMG))
+rank_names(subsetMG)
+sort(get_taxa_unique(subsetMG, "AMR_class_primary"))
+sort(sample_sums(subsetMG))
+sample_variables(subsetMG)
+taxa_names(subsetMG)
+plot_bar(subsetMG, fill="AMR_class_primary")
 
-### remove taxa with zeros
-subset <- prune_taxa(taxa_sums(subset) > 0, subset)
-
-### subset phyloseq object n=120 metagenomics data
-subsetG  <- subset_samples(subset,  Metagenomics == "yes" )    #n=120
-subsetG <- prune_taxa(taxa_sums(subsetG) > 0, subsetG)
-subsetG
-
-datatable(tax_table(subsetG))
-
-#subsetG
-#phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 1536 taxa and 120 samples ]
-#sample_data() Sample Data:       [ 120 samples by 26 sample variables ]
-#tax_table()   Taxonomy Table:    [ 1536 taxa by 6 taxonomic ranks ]
-#phy_tree()    Phylogenetic Tree: [ 1536 tips and 1535 internal nodes ]
-
-rank_names(subsetG)
-sort(get_taxa_unique(subsetG, "Genus"))
-sample_sums(subsetG)
-sample_variables(subsetG)
-
-
-taxa_names(subsetG)
-
-subset16S = subsetG
-subset16S@tax_table = gsub("=\\*|~\\*|\\*|<empty>","",subsetG@tax_table)
-
-datatable(tax_table(subset16S))
-
-
-
-sample_variables(subset16S)
-
-sample_data(subset16S)$Cluster = as.factor(sample_data(subset16S)$Cluster)
-sample_data(subset16S)$FlockSize = as.factor(sample_data(subset16S)$FlockSize)
-sample_data(subset16S)$AgeParentStock = as.factor(sample_data(subset16S)$AgeParentStock)
-sample_data(subset16S)$Age = as.factor(sample_data(subset16S)$Age)
-sample_data(subset16S)$LibraryNumber = as.factor(sample_data(subset16S)$LibraryNumber)
-
-
-
-unique(sample_data(subsetG)$Cox)
+# factorizing variables as not to create problems with visualisation later down the line
+sample_data(subsetMG)$Cluster = as.factor(sample_data(subsetMG)$Cluster)
+sample_data(subsetMG)$FlockSize = as.factor(sample_data(subsetMG)$FlockSize)
+sample_data(subsetMG)$AgeParentStock = as.factor(sample_data(subsetMG)$AgeParentStock)
+sample_data(subsetMG)$Age = as.factor(sample_data(subsetMG)$Age)
+sample_data(subsetMG)$LibraryNumber = as.factor(sample_data(subsetMG)$LibraryNumber)

@@ -78,7 +78,7 @@ sample_variables(subsetG)
 
 
 taxa_names(subsetG)
-
+# cleaning out all empty names from taxonomy table
 subset16S = subsetG
 subset16S@tax_table = gsub("=\\*|~\\*|\\*|<empty>","",subsetG@tax_table)
 
@@ -88,6 +88,7 @@ datatable(tax_table(subset16S))
 
 sample_variables(subset16S)
 
+# factorizing variables as not to create problems with visualisation later down the line
 sample_data(subset16S)$Cluster = as.factor(sample_data(subset16S)$Cluster)
 sample_data(subset16S)$FlockSize = as.factor(sample_data(subset16S)$FlockSize)
 sample_data(subset16S)$AgeParentStock = as.factor(sample_data(subset16S)$AgeParentStock)
