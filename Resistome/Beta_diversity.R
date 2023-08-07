@@ -1,0 +1,129 @@
+library(microbiomeDataSets)
+library(scater)
+library(mia)
+
+# Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
+
+filt.rar=data.frame(otu_table(Rps))
+
+#sample_data(Rps)$Age = as.factor(sample_data(Rps)$Age)
+
+
+# PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
+
+pcoa_bc = ordinate(Rps, "PCoA", "bray") 
+
+plot_ordination(Rps, pcoa_bc, color = "Age", shape = "AB") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray Curtis Age", color = "Age", shape = "Antibiotics used")
+
+plot_ordination(Rps, pcoa_bc, color = "Farm2", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA Bray Curtis Farms",color = "Farms", shape = "Antibiotics used")
+
+
+
+pcoa_unifrac = ordinate(Rps, "PCoA", "unifrac") 
+
+
+plot_ordination(Rps, pcoa_unifrac, color = "Age", shape = "AB") + 
+  geom_point(size = 3)  + labs(title = "PCoA UniFrac Age",color = "Age", shape = "Antibiotics used")
+
+plot_ordination(Rps, pcoa_unifrac, color = "Farm2", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA UniFrac Farms",color = "Farms", shape = "Antibiotics used")
+
+
+pcoa_wunifrac = ordinate(Rps, "PCoA", "wunifrac") 
+
+
+plot_ordination(Rps, pcoa_wunifrac, color = "Age", shape = "AB") + 
+  geom_point(size = 3)  + labs(title = "PCoA weighter UniFrac Age",color = "Age", shape = "Antibiotics used")
+
+plot_ordination(Rps, pcoa_wunifrac, color = "Farm2", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA weighted Unifrac Farms",color = "Farms", shape = "Antibiotics used")
+
+pcoa_jsd = ordinate(Rps, "PCoA", "jsd") 
+
+
+plot_ordination(Rps, pcoa_jsd, color = "Age", shape = "AB") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jensen-Shannon Divergence Age",color = "Age", shape = "Antibiotics used")
+
+plot_ordination(Rps, pcoa_jsd, color = "Farm2", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA Jensen-Shannon Divergence Farms",color = "Farms", shape = "Antibiotics used")
+
+pcoa_jaccard = ordinate(Rps, "PCoA", "jaccard", binary=TRUE) 
+
+plot_ordination(Rps, pcoa_jaccard, color = "Age", shape = "AB") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
+
+plot_ordination(Rps, pcoa_jaccard, color = "Farm2", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA Jaccard Farms",color = "Farms", shape = "Antibiotics used")
+
+
+
+#Rps.filtered <- core(Rps, detection = 10, prevalence = 0.05)
+
+plot_scree(pcoa_jsd) #scree plots can be made for any of the PCoAs
+
+
+psotu2veg <- function(physeq) {
+  OTU <- otu_table(physeq)
+  if (taxa_are_rows(OTU)) {
+    OTU <- t(OTU)
+  }
+  return(as(OTU, "matrix"))
+}
+
+Rps_veg = psotu2veg(Rps)
+dist_bray = vegdist(Rps_veg, "bray")
+betadisper(dist_bray,"Age")
+
+# plots for AB where age = 35 (deprecated)
+Rps@sam_data$Age==35
+Rps2=subset_samples(Rps, Age == "35")
+
+
+unwt.unifrac <- plot_ordination(Rps, 
+                                ordu.unwt.uni, color="Farm2") 
+unwt.unifrac <- unwt.unifrac + ggtitle("Unweighted UniFrac") + geom_point(size = 2)
+unwt.unifrac <- unwt.unifrac + theme_classic() + scale_color_brewer("Farm2", palette = "Set2")
+unwt.unifrac
+ps1.rel <- microbiome::transform(Rps2, "compositional")
+ordu.wt.uni <- ordinate(ps1.rel , "PCoA", "unifrac", weighted=T)
+wt.unifrac <- plot_ordination(ps1.rel, 
+                              ordu.wt.uni, color="AB") 
+wt.unifrac <- wt.unifrac + ggtitle("Weighted UniFrac") + geom_point(size = 2)
+wt.unifrac <- wt.unifrac + theme_classic() + scale_color_brewer("AB", palette = "Set2")
+print(wt.unifrac)
+
+
+ps1.rel <- microbiome::transform(Rps, "compositional")
+
+metadf <- data.frame(sample_data(ps1.rel))
+
+unifrac.dist <- UniFrac(ps1.rel, 
+                        weighted = TRUE, 
+                        normalized = TRUE,  
+                        parallel = FALSE, 
+                        fast = TRUE)
+
+tse2 = makeTreeSummarizedExperimentFromPhyloseq(Rps)
+tse2 <- relAbundanceCounts(tse2)
+
+tse2 <- transformCounts(tse2, method = "relabundance")
+tse2 <- runNMDS(tse2, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
+                    exprs_values = "relabundance",
+                    keep_dist = TRUE)
+
+plotReducedDim(tse2, "BC", colour_by = "Age")
+
+
+permanova_age <- adonis2(unifrac.dist ~ Age, data = metadf)
+permanova_AB <- adonis2(unifrac.dist ~ AB, data = metadf)
+permanova_farm <- adonis2(unifrac.dist ~ Farm2, data = metadf)
+permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
+permanova_researcher <- adonis2(unifrac.dist ~ Researcher, data = metadf)
+permanova_LitterType <- adonis2(unifrac.dist ~ LitterType, data = metadf)
+permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
+
+
+ps.disper <- betadisper(unifrac.dist, metadf$Age)
+permutest(ps.disper, pairwise = TRUE)

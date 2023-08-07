@@ -1,6 +1,7 @@
 library(microbiomeDataSets)
 library(scater)
 library(mia)
+library(simpr)
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 

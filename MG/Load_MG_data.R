@@ -42,6 +42,27 @@ sample_variables(subsetMG)
 taxa_names(subsetMG)
 plot_bar(subsetMG, fill="AMR_class_primary")
 
+subsetMG %>% ps_filter(AB == "no") %>% get_taxa_unique("ARGCluster90") 
+subsetMG %>% ps_filter(AB == "yes") %>% get_taxa_unique("ARGCluster90") 
+
+
+sort(get_taxa_unique(subsetMG, "ARGCluster90"))
+library(microViz)
+
+subsetMG %>% tax_fix(unknowns = c("lnu(B)")) %>% ps_filter(AB == "no") %>% 
+  ps_calc_dominant(rank = "ARGCluster90") %>% comp_barplot(tax_level = "ARGCluster90", n_taxa = 12) + coord_flip()
+
+
+ps_calc_dominant(
+  subsetMG,
+  "ARGCluster90",
+  threshold = 0.3,
+  n_max = 6,
+  var = paste("dominant", rank, sep = "_"),
+  none = "none",
+  other = "other"
+)
+
 # factorizing variables as not to create problems with visualisation later down the line
 sample_data(subsetMG)$Cluster = as.factor(sample_data(subsetMG)$Cluster)
 sample_data(subsetMG)$FlockSize = as.factor(sample_data(subsetMG)$FlockSize)

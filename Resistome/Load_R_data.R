@@ -1,0 +1,129 @@
+#### Load packages
+library(microbiome)
+library(phyloseq)
+library(microbiomeutilities)
+library(RColorBrewer)
+library(ggpubr)
+library(DT)
+library(data.table)
+library(tidyverse)
+library(pheatmap)
+library(picante)
+library(nlme)
+library(scales)
+library(readxl)
+library(microViz)
+
+
+### loading a subset of metagenomic data into phyloseq format
+Rps= readRDS("Phyloseq") # this reads a pre-existing phyloseq object containing OTU and tax tables
+Rps_tpm = readRDS("Phyloseq_tpm") # 
+
+# reading in and combining metadata from 16S and metagenomic origins, adding missing underscores
+firm_names = read_excel("./Metagenomic/FIRM_MetaNames.xlsx")
+firm_names$Sample_Unique = firm_names$Raw_data_name
+firm_names$Sample_Unique = str_split_i(firm_names$Raw_data_name, " ", 2) #This filters out Firm and firm and the space so that it lines up with the column of our meta data
+
+meta_data = read.csv("MetaData.csv", header = TRUE, sep = ",")
+meta_data_R = dplyr::left_join(firm_names, meta_data, by="Sample_Unique")
+meta_data_R$Raw_data_name = sub(" ", "_", meta_data_R$Raw_data_name)
+
+# using the metagenomic names ([Ff]irm*) as rownames
+meta_data_R %<>% remove_rownames %>% column_to_rownames(var="Raw_data_name")
+
+# creating tree and making phyloseq components, adding tree and sample data components to phyloseq
+random_tree = rtree(ntaxa(Rps), rooted=TRUE, tip.label=taxa_names(Rps))
+meta_data_R = sample_data(meta_data_R)
+Rps = merge_phyloseq(Rps, meta_data_R, random_tree)
+class(Rps)
+
+# repeat for tpm
+
+random_tree2 = rtree(ntaxa(Rps_tpm), rooted=TRUE, tip.label=taxa_names(Rps_tpm))
+Rps_tpm = merge_phyloseq(Rps_tpm, meta_data_R, random_tree2)
+
+#rounding the "counts" for phyloseq to function
+
+otu_table(Rps) = otu_table(round(as((otu_table(Rps)), "matrix")), taxa_are_rows(Rps))
+otu_table(Rps_tpm) = otu_table(round(as((otu_table(Rps_tpm)), "matrix")), taxa_are_rows(Rps_tpm))
+
+
+# overview data
+datatable(tax_table(Rps))
+rank_names(Rps)
+sort(get_taxa_unique(Rps, "AMR_class_primary"))
+sort(sample_sums(Rps)) #min is 118 and max 93167, enormous difference
+sample_variables(Rps)
+taxa_names(Rps)
+
+# absolute abundances
+plot_bar(Rps, fill="AMR_class_primary")
+plot_bar(Rps_tpm, fill="AMR_class_primary")
+
+table(tax_table(Rps)[, "AMR_class_primary"])
+table(tax_table(Rps)[, "ARGCluster90"])
+
+Rps %>% ps_filter(Sample_Unique == c("10_64", "10_63")) %>% plot_bar(fill="AMR_class_primary")
+Rps %>% ps_filter(Sample_Unique == c("10_64", "10_63"))
+
+
+
+Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S2")) %>% plot_bar(fill="AMR_class_primary")
+
+
+# relative abundances
+ps_rel_abund = transform_sample_counts(Rps, function(x){x / sum(x)})
+plot_bar(ps_rel_abund, fill = "AMR_class_primary") +
+  geom_bar(aes(color = AMR_class_primary, fill = AMR_class_primary), stat = "identity", position = "stack") +
+  labs(x = "", y = "Relative Abundance\n") +
+  facet_wrap(~ AB, scales = "free") +
+  theme(panel.background = element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+ps_prim <- phyloseq::tax_glom(Rps, "AMR_class_primary")
+taxa_names(ps_prim) <- phyloseq::tax_table(ps_prim)[, "AMR_class_primary"]
+
+psmelt(ps_prim) %>%
+  ggplot(data = ., aes(x = AB, y = Abundance)) +
+  geom_boxplot(outlier.shape  = NA) +
+  geom_jitter(aes(color = OTU), height = 0, width = .2) +
+  labs(x = "", y = "Abundance\n") +
+  facet_wrap(~ OTU, scales = "free")
+
+# Check the amount of uniqe ARGs in samples which have and have not been treated with antibiotics
+Rps %>% ps_filter(AB == "no") %>% get_taxa_unique("ARGCluster90") 
+Rps %>% ps_filter(AB == "yes") %>% get_taxa_unique("ARGCluster90") 
+
+Rps_tpm %>% ps_filter(AB == "no") %>% get_taxa_unique("ARGCluster90") 
+Rps_tpm %>% ps_filter(AB == "yes") %>% get_taxa_unique("ARGCluster90") 
+
+
+# plots of relative abundances
+Rps %>% tax_fix(unknowns = c("lnu(B)","cfr(B)")) %>% ps_filter(AB == "no") %>% 
+  ps_calc_dominant(rank = "ARGCluster90") %>% comp_barplot(tax_level = "ARGCluster90", n_taxa = 12) + coord_flip()
+
+
+Rps_tpm %>% tax_fix(unknowns = c("lnu(B)","cfr(B)")) %>% ps_filter(AB == "no") %>% 
+  ps_calc_dominant(rank = "ARGCluster90") %>% comp_barplot(tax_level = "ARGCluster90", n_taxa = 12) + coord_flip()
+
+Rps %>% tax_fix(unknowns = c("lnu(B)","cfr(B)")) %>% ps_filter(AB == "yes") %>% 
+  ps_calc_dominant(rank = "ARGCluster90") %>% comp_barplot(tax_level = "AMR_class_primary", n_taxa = 12) + coord_flip()
+
+Rps %>% tax_fix(unknowns = c("blaOXA-493_clust", "cfr(B)", "dfrA16_clust", "dfrA7_dfrA17", "lnu(B)")) %>% ps_calc_dominant(
+  "ARGCluster90",
+  threshold = 0.3,
+  n_max = 6,
+  var = paste("dominant", rank, sep = "_"),
+  none = "none",
+  other = "other"
+)
+
+
+# factorizing variables as not to create problems with visualisation later down the line
+sample_data(Rps)$Cluster = as.factor(sample_data(Rps)$Cluster)
+sample_data(Rps)$FlockSize = as.factor(sample_data(Rps)$FlockSize)
+sample_data(Rps)$AgeParentStock = as.factor(sample_data(Rps)$AgeParentStock)
+sample_data(Rps)$Age = as.factor(sample_data(Rps)$Age)
+sample_data(Rps)$LibraryNumber = as.factor(sample_data(Rps)$LibraryNumber)

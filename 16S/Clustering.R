@@ -13,6 +13,7 @@ library(ggplot2)
 library(biclust)
 library(ecodist)
 library(sechm)
+library(simpr)
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
 

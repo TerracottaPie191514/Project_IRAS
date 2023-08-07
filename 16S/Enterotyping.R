@@ -36,7 +36,7 @@ dist.JSD <- function(inMatrix, pseudocount=0.000001, ...) {
   return(resultsMatrix) 
 }
 
-# making genus abudance table from phyloseq
+# making genus abundance table from phyloseq
 
 
 #filtering out samples that have multiple values (Keys are shared for 1376 rows)

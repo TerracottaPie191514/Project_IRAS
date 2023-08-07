@@ -12,20 +12,27 @@ library(picante)
 
 # used the following guide: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/alpha-diversities.html
 
-summary(sample_sums(subsetMG))
-otu_tab <- t(abundances(subsetMG))
+otu_tab <- t(abundances(Rps))
+otu_tab2 <- t(abundances(Rps_tpm))
+
 # rarefaction curve
 p <- vegan::rarecurve(otu_tab,
                       step = 50, label = FALSE,
                       sample = min(rowSums(otu_tab),
                                    col = "blue", cex = 0.6))
-# most samples are closing in on a plateau so fairly deep sequencing depth
+# virtually no samples are reaching a plateau so sequencing depth is not appropriate
 
-#rarefy to equal library size or not?
+p <- vegan::rarecurve(otu_tab2,
+                      step = 50, label = FALSE,
+                      sample = min(rowSums(otu_tab),
+                                   col = "blue", cex = 0.6))
+# rarefaction curves of TPM data are all converging towards the plateau, no rarefaction required
 
-lib.div <- microbiome::alpha(subsetMG, index = "all")
-lib.div2 <- richness(subsetMG)
-lib.div$ReadsPerSample <- sample_sums(subsetMG)
+# rarefy to equal library size or not?
+
+lib.div <- microbiome::alpha(Rps, index = "all")
+lib.div2 <- richness(Rps)
+lib.div$ReadsPerSample <- sample_sums(Rps)
 lib.div$Observed <- lib.div2$observed
 colnames(lib.div)
 p1 <- ggscatter(lib.div, "diversity_shannon", "ReadsPerSample") +
@@ -44,50 +51,53 @@ p3 <- ggscatter(lib.div, "Observed", "ReadsPerSample",
 
 ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
 
+# we can clearly see an increase in reads/sample when increasing abundance, so we require a rarefaction for FPKM data
 
-#remove samples with lower sequencing depth? -> big question
+set.seed(1337)
 
-#set.seed(1337)
-
-#ps0.rar <- rarefy_even_depth(subsetMG, sample.size = 46731)
+ps0.rar <- rarefy_even_depth(Rps, sample.size = 118) # we do not want to lose samples so lowest sample size is maintained
 
 # function not advisable generally > ?rarefy_even_depth()
 
+# create taxa prevalence plots, need to change "taxa" levels to actual taxa
+colnames(ps0.rar@tax_table) = c("Phylum", "Order", "Class","Family") # Phylum = AMR_class_primary, Order = AMR_class_secondary, Class = ARGCluster90, Family = ID_Clust_Refsequence
+plot_taxa_prevalence(ps0.rar, "Phylum")
+pscopy = Rps
+colnames(pscopy@tax_table) = c("Phylum", "Order", "Class","Family")
+plot_taxa_prevalence(pscopy, "Phylum")
+ps_tpmcopy = Rps_tpm
+colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
+plot_taxa_prevalence(ps_tpmcopy, "Phylum")
 
-#ps0.rar
 
-#plot_taxa_prevalence(ps0.rar, "Phylum")
-
-plot_taxa_prevalence(subsetMG, "AMR_class_primary")
-
-hmp.div <- microbiome::alpha(subsetMG, index = "all") # use ps0.rar if rarefied
+hmp.div <- microbiome::alpha(Rps, index = "all") # use ps0.rar if rarefied
 
 datatable(hmp.div)
 
 
-hmp.meta <- meta(subsetMG) # use ps0.rar if rarefied
+hmp.meta <- meta(Rps) # use ps0.rar if rarefied
 hmp.meta$sam_name <- rownames(hmp.meta)
 hmp.div$sam_name <- rownames(hmp.div)
 div.df <- merge(hmp.div,hmp.meta, by = "sam_name")
 colnames(div.df)
 
+
+
+
+#based on microbial agent
 div.df$Cox[div.df$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
 div.df$Cox[div.df$Cox == "narasin(monteban)"] = "Monteban"
 div.df$Cox[div.df$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 div.df$Cox
 
-#based on microbial agent
-
-p <- ggboxplot(div.df,
+ggboxplot(div.df,
                x = "Cox",
                y = "diversity_shannon",
                fill = "Cox",
-               palette = "jco")
+               palette = "jco") + 
+  rotate_x_text()
 
-
-p <- p + rotate_x_text()
-p
 
 
 div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
@@ -132,14 +142,6 @@ p2 <- p + stat_compare_means(
 
 p2
 
-subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
-subset_mg.tree <- subset_mg@phy_tree
-subset_mg@phy_tree
-
-df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
-
-datatable(df.pd)
-hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
 
 
@@ -226,15 +228,6 @@ p2 <- p + stat_compare_means(
 
 p2
 
-subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
-subset_mg.tree <- subset_mg@phy_tree
-subset_mg@phy_tree
-
-df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
-
-datatable(df.pd)
-hmp.meta$Phylogenetic_Diversity <- df.pd$PD
-
 
 
 pd.plot <- ggboxplot(hmp.meta,
@@ -313,14 +306,6 @@ p2 <- p + stat_compare_means(
 
 p2
 
-subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
-subset_mg.tree <- subset_mg@phy_tree
-subset_mg@phy_tree
-
-df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
-
-datatable(df.pd)
-hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
 
 pd.plot <- ggboxplot(hmp.meta,
@@ -387,14 +372,6 @@ p2 <- p + stat_compare_means(
 
 p2
 
-subset_mg.asvtab <- as.data.frame(subset_mg@otu_table) #replace subset_mg with ps0.rar everywhere
-subset_mg.tree <- subset_mg@phy_tree
-subset_mg@phy_tree
-
-df.pd <- pd(t(subset_mg.asvtab), subset_mg.tree,include.root=T)
-
-datatable(df.pd)
-hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
 
 pd.plot <- ggboxplot(hmp.meta,
