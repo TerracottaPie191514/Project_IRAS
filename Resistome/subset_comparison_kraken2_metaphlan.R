@@ -1,20 +1,19 @@
 library(tidyverse)
 
 subset_kraken2 = import_biom("FIRM-DNA-subset.json")
-total_mapped_reads_kraken2 = sample_sums(subset_kraken2)
+
+total_mapped_reads_kraken2 = subset_kraken2 %>% tax_select("k__Bacteria") %>% sample_sums() # select only the bacterial hits
 total_mapped_reads_kraken2 = data.frame(total_mapped_reads_kraken2)
 rownames(total_mapped_reads_kraken2) = c("10_53", "9_39", "9_38", "14_30", "10_52")
 total_mapped_reads_kraken2 <- tibble::rownames_to_column(total_mapped_reads_kraken2, "Sample")
 
-
+# manually gathered metaphlann values
 total_mapped_reads_metaphlan <- data.frame (Sample  = c("10_53", "9_39", "9_38", "14_30", "10_52"),
                   total_mapped_reads_metaphlan = c("25900713", "8699809", "11619167", "12798500", "17231290")
 )
 total_mapped_reads_metaphlan$total_mapped_reads_metaphlan = as.numeric(total_mapped_reads_metaphlan$total_mapped_reads_metaphlan)
 
-
 mapped_reads = left_join(total_mapped_reads_kraken2, total_mapped_reads_metaphlan, by="Sample")
-
 
 ggplot(mapped_reads, aes(x = Sample, y = total_mapped_reads_kraken2, group = 1)) + geom_line()
 ggplot(mapped_reads, aes(x = Sample, y = total_mapped_reads_metaphlan, group = 1)) + geom_line()

@@ -19,7 +19,35 @@ plot_ordination(Rps, pcoa_bc, color = "Age", shape = "AB") +
 plot_ordination(Rps, pcoa_bc, color = "Farm2", shape = "AB") + 
   geom_point(size = 3) + labs(title = "PCoA Bray Curtis Farms",color = "Farms", shape = "Antibiotics used")
 
+#plot_ordination(Rps, pcoa_bc, type = "taxa", color = "AMR_class_primary") + 
+#  geom_point(size = 3)  + labs(title = "PCoA primary AMR classes", color = "AMR_class_primary")
 
+# trying out some stuff
+
+dist = "bray"
+ord_meths = c("DCA", "CCA", "RDA", "DPCoA", "NMDS", "MDS", "PCoA")
+plist = llply(as.list(ord_meths), function(i, physeq, dist){
+  ordi = ordinate(physeq, method=i, distance=dist)
+  plot_ordination(physeq, ordi, "samples", color="Age", shape = "AB")
+}, Rps, dist)
+
+names(plist) <- ord_meths
+
+pdataframe = ldply(plist, function(x){
+  df = x$data[, 1:2]
+  colnames(df) = c("Axis_1", "Axis_2")
+  return(cbind(df, x$data))
+})
+names(pdataframe)[1] = "method"
+ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) + 
+  geom_point(size=4) + 
+  facet_wrap(~method, scales="free") +
+  scale_fill_brewer(type="qual", palette="Set1") +
+  scale_colour_brewer(type="qual", palette="Set1")
+
+
+plot_ordination(Rps, pcoa_bc, type = "split", color = "AMR_class_primary", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA Bray Curtis Farms",color = "Farms", shape = "Antibiotics used")
 
 pcoa_unifrac = ordinate(Rps, "PCoA", "unifrac") 
 
@@ -57,6 +85,12 @@ plot_ordination(Rps, pcoa_jaccard, color = "Age", shape = "AB") +
 plot_ordination(Rps, pcoa_jaccard, color = "Farm2", shape = "AB") + 
   geom_point(size = 3) + labs(title = "PCoA Jaccard Farms",color = "Farms", shape = "Antibiotics used")
 
+# added plot to look at concentration with a red green gradient
+
+plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", label = "FarmRoundStable") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "Conc...ng..µl.", shape = "Antibiotics used") +
+  scale_colour_gradient(low = "red", high = "green")
+
 
 
 #Rps.filtered <- core(Rps, detection = 10, prevalence = 0.05)
@@ -72,9 +106,10 @@ psotu2veg <- function(physeq) {
   return(as(OTU, "matrix"))
 }
 
+library(vegan)
 Rps_veg = psotu2veg(Rps)
 dist_bray = vegdist(Rps_veg, "bray")
-betadisper(dist_bray,"Age")
+betadisper(unifrac.dist,"Age")
 
 # plots for AB where age = 35 (deprecated)
 Rps@sam_data$Age==35

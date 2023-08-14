@@ -3,7 +3,7 @@ library(vegan)
 # Used the following guides: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/multivariate-comparisons-of-microbial-community-composition.html, https://microbiome.github.io/course_2022_radboud/beta-diversity-demo.html
 
 
-tse_genus <- agglomerateByRank(tse_genus, "Genus")
+tse_genus <- agglomerateByRank(tse, "Genus")
 tse_genus <- transformCounts(tse_genus, method = "relabundance")
 
 

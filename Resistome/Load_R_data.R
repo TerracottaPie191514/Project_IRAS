@@ -16,26 +16,32 @@ library(microViz)
 
 
 ### loading a subset of metagenomic data into phyloseq format
-Rps= readRDS("Phyloseq") # this reads a pre-existing phyloseq object containing OTU and tax tables
+Rps= readRDS("Phyloseq") # this reads a pre-existing phyloseq object containing OTU and tax tables, with [fF]irm_x_x names as sample_names
 Rps_tpm = readRDS("Phyloseq_tpm") # 
+
+#We rewrite the sample names to a format filtering out Firm and firm and the first underscore so that it lines up with the column of our meta data
+sample_names(Rps) = sapply(regmatches(sample_names(Rps), regexpr("_", sample_names(Rps)), invert = TRUE), "[[", 2) 
+
+# Because the names in both metadata sets do not completely overlap, we need to manually edit one of the samples whose name was not included in the FIRM metadata file
+
+sample_names(Rps)[68] = "4_65"
 
 # reading in and combining metadata from 16S and metagenomic origins, adding missing underscores
 firm_names = read_excel("./Metagenomic/FIRM_MetaNames.xlsx")
-firm_names$Sample_Unique = firm_names$Raw_data_name
-firm_names$Sample_Unique = str_split_i(firm_names$Raw_data_name, " ", 2) #This filters out Firm and firm and the space so that it lines up with the column of our meta data
+firm_names = firm_names[,-2] # Remove wrongful Raw_data_name column, to avoid confusion
 
 meta_data = read.csv("MetaData.csv", header = TRUE, sep = ",")
-meta_data_R = dplyr::left_join(firm_names, meta_data, by="Sample_Unique")
-meta_data_R$Raw_data_name = sub(" ", "_", meta_data_R$Raw_data_name)
+meta_data_R = dplyr::right_join(firm_names, meta_data, by="SampleID")
 
-# using the metagenomic names ([Ff]irm*) as rownames
-meta_data_R %<>% remove_rownames %>% column_to_rownames(var="Raw_data_name")
+# using Sample_Unique as rownames so we can match the two sets in phyloseq
+meta_data_R %<>% remove_rownames %>% column_to_rownames(var="Sample_Unique")
 
 # creating tree and making phyloseq components, adding tree and sample data components to phyloseq
 random_tree = rtree(ntaxa(Rps), rooted=TRUE, tip.label=taxa_names(Rps))
 meta_data_R = sample_data(meta_data_R)
 Rps = merge_phyloseq(Rps, meta_data_R, random_tree)
 class(Rps)
+
 
 # repeat for tpm
 
@@ -56,6 +62,7 @@ sort(sample_sums(Rps)) #min is 118 and max 93167, enormous difference
 sample_variables(Rps)
 taxa_names(Rps)
 
+
 # absolute abundances
 plot_bar(Rps, fill="AMR_class_primary")
 plot_bar(Rps_tpm, fill="AMR_class_primary")
@@ -67,7 +74,7 @@ Rps %>% ps_filter(Sample_Unique == c("10_64", "10_63")) %>% plot_bar(fill="AMR_c
 Rps %>% ps_filter(Sample_Unique == c("10_64", "10_63"))
 
 
-
+# for plotting abundances of specific stables
 Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S2")) %>% plot_bar(fill="AMR_class_primary")
 
 

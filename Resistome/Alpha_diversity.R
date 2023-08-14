@@ -394,3 +394,11 @@ pd.plot + stat_compare_means(
   )
 )
 
+
+plot_richness(ps0.rar, x="Age", measures=c("Chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"), color = "Age", nrow = 2)+
+  geom_boxplot(alpha=0.6) + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12))
+
+plot_richness(ps0.rar, x="Farm2", nrow = 2, color = "Farm2", title = "Alpha diversity metrics based on farm (rarefied)")+
+  geom_boxplot(alpha=0.6) + theme_classic() +
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12), axis.title.x = element_blank()) 
