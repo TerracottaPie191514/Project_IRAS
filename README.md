@@ -1,3 +1,4 @@
  # Effect of antibiotic usage on the microbiome and resistome in broiler chickens: a field study.
 
-The bash [scripts](Pipeline) in this repository are used in the pipeline to get resistomic data from 120 metagenomic samples
+The bash [scripts](Pipeline) in this repository are used in the pipeline to get resistomic data from 120 metagenomic samples. First off, samples are [merged](Pipeline/merge.sh), after which [trimming](Pipeline/clean.sh) occurs. The samples are quality checked both [before](Pipeline/pre_qc.sh) and [after](Pipeline/post_qc.sh) trimming. Then, the reads are [mapped](Pipeline/map_resistome.sh) to a resistome database (Resfinder). Reads are also mapped against the bacteriome with both [Metaphlan](get_counts_metaphlan.sh) and Kraken2(upcoming). From these mappings, the total bacteriome reads mapped are calculated again both for [Metaphlan](extract_reads_metaphlan.sh) and Kraken2(upcoming). 
+Analyses are done for both [16S](16S) and [resistome](Resistome) data.
