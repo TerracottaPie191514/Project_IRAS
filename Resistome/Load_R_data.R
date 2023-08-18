@@ -10,8 +10,6 @@ library(tidyverse)
 library(pheatmap)
 library(picante)
 library(nlme)
-library(scales)
-library(readxl)
 library(microViz)
 
 
