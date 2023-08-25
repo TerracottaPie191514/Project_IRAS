@@ -64,7 +64,7 @@ colnames(ps0.rar@tax_table) = c("Phylum", "Order", "Class","Family") # Phylum = 
 plot_taxa_prevalence(ps0.rar, "Phylum")
 pscopy = Rps
 colnames(pscopy@tax_table) = c("Phylum", "Order", "Class","Family")
-plot_taxa_prevalence(pscopy, "Phylum")
+plot_taxa_prevalence(pscopy, "Phylum") # Sadly we can see entire phyla disappear, as well as many individual values, rarefaction is deemed not appropriate either way
 ps_tpmcopy = Rps_tpm
 colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
 plot_taxa_prevalence(ps_tpmcopy, "Phylum")
@@ -80,8 +80,6 @@ hmp.meta$sam_name <- rownames(hmp.meta)
 hmp.div$sam_name <- rownames(hmp.div)
 div.df <- merge(hmp.div,hmp.meta, by = "sam_name")
 colnames(div.df)
-
-
 
 
 #based on microbial agent
@@ -395,6 +393,8 @@ pd.plot + stat_compare_means(
 )
 
 
+# different way of plotting
+
 plot_richness(ps0.rar, x="Age", measures=c("Chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"), color = "Age", nrow = 2)+
   geom_boxplot(alpha=0.6) + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12))
@@ -402,3 +402,118 @@ plot_richness(ps0.rar, x="Age", measures=c("Chao1", "ACE", "Shannon", "Simpson",
 plot_richness(ps0.rar, x="Farm2", nrow = 2, color = "Farm2", title = "Alpha diversity metrics based on farm (rarefied)")+
   geom_boxplot(alpha=0.6) + theme_classic() +
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12), axis.title.x = element_blank()) 
+
+
+## Looking at significance
+
+# Checking for normality
+
+hist(lib.div$chao1, main="Chao richness", xlab="")
+hist(lib.div$diversity_shannon, main="Shannon diversity", xlab="")
+hist(lib.div$diversity_fisher, main="Fisher diversity", xlab="")
+hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
+hist(lib.div$evenness_simpson, main="Simpson evenness", xlab="")
+#hist(1/lib.div$evenness_simpson, main="Inverse Simpson evenness", xlab="")
+hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
+hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
+
+
+# If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
+# In this case, the data seems roughly normally distributed, we can use Shapiro-Wilk tests to test for normality for individual measures
+shapiro.test(lib.div$chao1) # test deems it not normally distributed
+shapiro.test(lib.div$diversity_shannon) # test deems this measure not normally distributed
+shapiro.test(lib.div$diversity_fisher) # test deems this measure not normally distributed
+shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed
+shapiro.test(lib.div$evenness_simpson) # test deems this measure normally distributed
+shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed
+shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed
+
+# Fairly small sample sizes however, and the shaprio-wilk test is not perfect, we will assume normality for all measures except for Gini-simpson diversity based on the graphs
+# The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
+
+# We will run ANOVAs for the normally distributed measures
+
+# Age
+
+# vis : #boxplot(lib.div$diversity_shannon ~  sample_data(Rps)$Age, ylab="Shannon's diversity")
+
+aov.chao1.age = aov(lib.div$chao1 ~ sample_data(Rps)$Age)
+summary(aov.chao1.age)
+
+aov.shannon.age = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age)
+summary(aov.shannon.age)
+
+aov.fisher.age = aov(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
+summary(aov.fisher.age)
+
+aov.gini_simpson.age = aov(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age)
+summary(aov.gini_simpson.age)
+
+aov.simpson.age = aov(lib.div$evenness_simpson ~ sample_data(Rps)$Age)
+summary(aov.simpson.age)
+
+aov.inv_simpson.age = aov(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age)
+summary(aov.inv_simpson.age)
+
+aov.pielou.age = aov(lib.div$evenness_pielou ~ sample_data(Rps)$Age)
+summary(aov.pielou.age)
+
+# Antibiotics
+
+aov.chao1.AB = aov(lib.div$chao1 ~ sample_data(Rps)$AB)
+summary(aov.chao1.AB)
+
+aov.shannon.AB = aov(lib.div$diversity_shannon ~ sample_data(Rps)$AB)
+summary(aov.shannon.AB)
+
+aov.fisher.AB = aov(lib.div$diversity_fisher ~ sample_data(Rps)$AB)
+summary(aov.fisher.AB)
+
+aov.gini_simpson.AB = aov(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB)
+summary(aov.gini_simpson.AB)
+
+aov.simpson.AB = aov(lib.div$evenness_simpson ~ sample_data(Rps)$AB)
+summary(aov.simpson.AB)
+
+aov.inv_simpson.AB = aov(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB)
+summary(aov.inv_simpson.AB)
+
+aov.pielou.AB = aov(lib.div$evenness_pielou ~ sample_data(Rps)$AB)
+summary(aov.pielou.AB)
+
+# Farm
+
+aov.chao1.farm = aov(lib.div$chao1 ~ sample_data(Rps)$Farm2)
+summary(aov.chao1.farm)
+TukeyHSD(aov.chao1.farm)  # it seems that Farm 1 differs significantly from Farm 2 and 3 but not 4. Farm 2 differs from 1 and 4 but not 3, Farm 3 and 4 differ as well. ( 3 and 2 are similar, and 4 and 1 are similar)
+
+aov.shannon.farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Farm2)
+summary(aov.shannon.farm)
+TukeyHSD(aov.shannon.farm)
+
+aov.fisher.farm = aov(lib.div$diversity_fisher ~ sample_data(Rps)$Farm2)
+summary(aov.fisher.farm)
+TukeyHSD(aov.fisher.farm)
+
+aov.gini_simpson.farm = aov(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Farm2)
+summary(aov.gini_simpson.farm)
+TukeyHSD(aov.gini_simpson.farm)
+
+aov.simpson.farm = aov(lib.div$evenness_simpson ~ sample_data(Rps)$Farm2)
+summary(aov.simpson.farm)
+TukeyHSD(aov.simpson.farm)
+
+aov.inv_simpson.farm = aov(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Farm2)
+summary(aov.inv_simpson.farm)
+TukeyHSD(aov.inv_simpson.farm)
+
+aov.pielou.farm = aov(lib.div$evenness_pielou ~ sample_data(Rps)$Farm2)
+summary(aov.pielou.farm)
+TukeyHSD(aov.pielou.farm)
+
+
+# In addition, it could be interesting to look at the concentration of DNA as a continuous variable
+
+
+lib.div$evenness_pielou
+
