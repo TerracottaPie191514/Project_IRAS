@@ -16,7 +16,10 @@ library(sechm)
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+Rps_new = subset_samples(Rps, Sample_Unique != "2_57")
+
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(Rps_new)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -24,6 +27,8 @@ x <- t(assay(tse, "relabundance"))
 hclust.out <- clusterRows(x, HclustParam())
 colData(tse)$clusters <- hclust.out
 hclust.out$clusters
+
+# Community type clustering
 
 tse <- runMDS(tse,
               assay.type = "relabundance",
@@ -46,7 +51,7 @@ pam.out <- clusterCells(tse,
 
 pam.out
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(Rps)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -73,7 +78,7 @@ res_bray$Best.nc
 
 # Trying out different methods for finding optimal number of clusters:
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(Rps)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -100,7 +105,7 @@ diss_jaccard <- as.matrix(diss_jaccard)
 fviz_nbclust(diss_jaccard, kmeans, method = "silhouette")
 
 set.seed(1337)
-km <- kmeans(diss, 2, nstart = 25)
+km <- kmeans(diss_jaccard, 2, nstart = 25)
 colData(tse)$clusters <- as.factor(km$cluster)
 tse <- runMDS(tse, assay.type = "relabundance", FUN = vegan::vegdist, method = "bray")
 plotReducedDim(tse, "MDS", colour_by = "Farm2")
@@ -108,17 +113,17 @@ plotReducedDim(tse, "MDS", colour_by = "Farm2")
 
 
 #testing
-tse2 = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
-tse2 <- agglomerateByRank(tse2, rank = "Genus", agglomerateTree = TRUE)
+tse2 = makeTreeSummarizedExperimentFromPhyloseq(Rps)
+tse2 <- agglomerateByRank(tse2, rank = "ARGCluster90", agglomerateTree = TRUE)
 
 
 
 #
   
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(Rps)
 #agglomerateByRank(tse) 
 colnames(rowData(tse)) = c("Domain","Phylum","Class","Order") # Domain = AMR_class_primary, Phylum = AMR_class_secondary, Class = ARGCluster90, Order = ID_Clust_Refsequence
-tse <- agglomerateByRank(tse, rank = "Domain", agglomerateTree = TRUE) # this is not working
+tse <- agglomerateByRank(tse, rank = "Class", agglomerateTree = TRUE) # this is not working
 tse_dmn <- mia::runDMN(tse, name = "DMN", k = 1:7)
 tse_dmn
 names(metadata(tse_dmn))
@@ -174,7 +179,7 @@ euclidean_dmm_plot <- ggplot(
 
 euclidean_dmm_plot
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse = makeTreeSummarizedExperimentFromPhyloseq(Rps)
 colnames(rowData(tse)) = c("Domain","Phylum","Class","Order") # Domain = AMR_class_primary, Phylum = AMR_class_secondary, Class = ARGCluster90, Order = ID_Clust_Refsequence
 
 tse <- transformCounts(tse, method = "rclr")
@@ -538,3 +543,4 @@ sechm(tse_phylum,
       top_annotation = c("AB"), 
       gaps_at = "AB",
       cluster_cols = TRUE, cluster_rows = TRUE)
+

@@ -10,7 +10,7 @@ library(picante)
 
 
 
-# used the following guide: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/alpha-diversities.html
+# used the following guides: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/alpha-diversities.html, https://rpubs.com/maddieSC/R_SOP_BRC_Oct_2019, https://rpubs.com/lconteville/713954
 
 otu_tab <- t(abundances(Rps))
 otu_tab2 <- t(abundances(Rps_tpm))
@@ -435,53 +435,54 @@ shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distrib
 
 # Age
 
+# Normally distributed with only 2 levels, so we can use t-tests : 
 # vis : #boxplot(lib.div$diversity_shannon ~  sample_data(Rps)$Age, ylab="Shannon's diversity")
 
-aov.chao1.age = aov(lib.div$chao1 ~ sample_data(Rps)$Age)
-summary(aov.chao1.age)
+t.test(lib.div$chao1 ~ sample_data(Rps)$Age)
 
-aov.shannon.age = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age)
-summary(aov.shannon.age)
+t.test(lib.div$diversity_shannon ~ sample_data(Rps)$Age)
 
-aov.fisher.age = aov(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
-summary(aov.fisher.age)
+t.test(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
 
-aov.gini_simpson.age = aov(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age)
-summary(aov.gini_simpson.age)
+t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # remove this later
 
-aov.simpson.age = aov(lib.div$evenness_simpson ~ sample_data(Rps)$Age)
-summary(aov.simpson.age)
+t.test(lib.div$evenness_simpson ~ sample_data(Rps)$Age)
 
-aov.inv_simpson.age = aov(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age)
-summary(aov.inv_simpson.age)
+t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age) # not significant
 
-aov.pielou.age = aov(lib.div$evenness_pielou ~ sample_data(Rps)$Age)
-summary(aov.pielou.age)
+t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
+
+
+# Non-normally distributed
+
+kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # gini simpson diversity does not seem to significantly differ across the different age groups
+
+boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpson's diversity") # the boxplots are quite similar so this is not
+
 
 # Antibiotics
 
-aov.chao1.AB = aov(lib.div$chao1 ~ sample_data(Rps)$AB)
-summary(aov.chao1.AB)
+t.test(lib.div$chao1 ~ sample_data(Rps)$AB)
 
-aov.shannon.AB = aov(lib.div$diversity_shannon ~ sample_data(Rps)$AB)
-summary(aov.shannon.AB)
+t.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB)
 
-aov.fisher.AB = aov(lib.div$diversity_fisher ~ sample_data(Rps)$AB)
-summary(aov.fisher.AB)
+t.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB)
 
-aov.gini_simpson.AB = aov(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB)
-summary(aov.gini_simpson.AB)
+t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB)
 
-aov.simpson.AB = aov(lib.div$evenness_simpson ~ sample_data(Rps)$AB)
-summary(aov.simpson.AB)
+t.test(lib.div$evenness_simpson ~ sample_data(Rps)$AB)
 
-aov.inv_simpson.AB = aov(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB)
-summary(aov.inv_simpson.AB)
+t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB)
 
-aov.pielou.AB = aov(lib.div$evenness_pielou ~ sample_data(Rps)$AB)
-summary(aov.pielou.AB)
+t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB)
 
-# Farm
+# Non-normally distributed
+
+kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # none of the AB seem to significantly differ
+
+# Farm has more than 2 levels, so we will use ANOVAs
+
+boxplot(lib.div$diversity_shannon ~  sample_data(Rps)$Farm2, ylab="Shannon's diversity")
 
 aov.chao1.farm = aov(lib.div$chao1 ~ sample_data(Rps)$Farm2)
 summary(aov.chao1.farm)
@@ -511,9 +512,62 @@ aov.pielou.farm = aov(lib.div$evenness_pielou ~ sample_data(Rps)$Farm2)
 summary(aov.pielou.farm)
 TukeyHSD(aov.pielou.farm)
 
+# Non-normally distributed
+
+kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Farm2)
+
+pairwise.wilcox.test(lib.div$diversity_gini_simpson, sample_data(Rps)$Farm2, p.adjust.method="fdr")
 
 # In addition, it could be interesting to look at the concentration of DNA as a continuous variable
 
+# Normally distributed
 
-lib.div$evenness_pielou
+glm.chao1.age = glm(lib.div$chao1 ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.chao1.age)
+plot(lib.div$chao1 ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.chao1.age)
+
+glm.shannon.age = glm(lib.div$diversity_shannon ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.shannon.age)
+plot(lib.div$diversity_shannon ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.shannon.age)
+
+glm.fisher.age = glm(lib.div$diversity_fisher ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.fisher.age)
+plot(lib.div$diversity_fisher ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.fisher.age)
+
+glm.gini_simpson.age = glm(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.gini_simpson.age)
+plot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.gini_simpson.age)
+
+glm.simpson.age = glm(lib.div$evenness_simpson ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.simpson.age)
+plot(lib.div$evenness_simpson ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.simpson.age)
+
+glm.inv_simpson.age = glm(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.inv_simpson.age)
+plot(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.inv_simpson.age)
+
+glm.pielou.age = glm(lib.div$evenness_pielou ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.pielou.age)
+plot(lib.div$evenness_pielou ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.pielou.age)
+
+# Non-normally distributed
+
+gaussian.gini_simpson.conc = glm(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Conc...ng..µl., family="gaussian")
+par(mfrow = c(1,2))
+plot(gaussian.gini_simpson.conc, which=c(1,2))
+qp.gini_simpson.conc = glm(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Conc...ng..µl., family="quasipoisson")
+par(mfrow = c(1,2))
+plot(qp.gini_simpson.conc, which=c(1,2))
+summary(qp.gini_simpson.conc)
+par(mfrow = c(1, 1))
+#Plot
+plot(log(lib.div$diversity_gini_simpson) ~ sample_data(Rps)$Conc...ng..µl., ylab="ln(Chao's richness)")
+abline(qp.gini_simpson.conc)
 

@@ -68,10 +68,6 @@ plot_bar(Rps_tpm, fill="AMR_class_primary")
 table(tax_table(Rps)[, "AMR_class_primary"])
 table(tax_table(Rps)[, "ARGCluster90"])
 
-Rps %>% ps_filter(Sample_Unique == c("10_64", "10_63")) %>% plot_bar(fill="AMR_class_primary")
-Rps %>% ps_filter(Sample_Unique == c("10_64", "10_63"))
-
-
 # for plotting abundances of specific stables
 Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S2")) %>% plot_bar(fill="AMR_class_primary")
 

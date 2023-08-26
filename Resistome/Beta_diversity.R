@@ -11,6 +11,36 @@ filt.rar=data.frame(otu_table(Rps))
 
 # PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
 
+# Transpose OTU table, and use farm as group structure
+simper(t(otu_table(Rps)), sample_data(Rps)$Farm2, permutations = 999)
+
+names(s)
+
+
+
+s
+
+kruskal_abundance(Rps, "Farm2")
+kruskal_abundance(Rps@otu_table["tet(O/32/O)_5_FP929050"], sample_data(Rps)$Age)
+
+
+
+
+test = subset_taxa(Rps, rownames(tax_table(Rps)) %in% c("tet(O/32/O)_5_FP929050", "tet(O/W/32/O)_1_EF065523"))
+
+
+
+kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+
+
+
+
+kruskal.test(test@otu_table["tet(O/32/O)_5_FP929050"] ~ as.factor(sample_data(test)$Age))
+
+kruskal_abundance()
+
+simper(Rps@otu_table, permutations = 5)
+
 pcoa_bc = ordinate(Rps, "PCoA", "bray") 
 
 plot_ordination(Rps, pcoa_bc, color = "Age", shape = "AB") + 
