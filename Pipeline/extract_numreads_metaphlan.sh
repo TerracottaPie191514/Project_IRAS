@@ -2,7 +2,7 @@
 set -e
 
 indir="$HOME/results/04_mapped_bac_reads"
-outfile="$HOME/results/total_mapped_reads.tab"
+outfile="$HOME/results/total_mapped_reads_metaphlan.tab"
 
 # This script will extract the total number of mapped reads from MetaPhlan output (with the output name set as profiled_metagenome.txt)
 

@@ -7,6 +7,7 @@ library(DT) # interactive tables in html and markdown
 library(data.table) # alternative to data.frame
 library(dplyr) # data handling
 library(picante)
+library(lme4)
 
 
 
@@ -455,7 +456,7 @@ t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
 
 # Non-normally distributed
 
-kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # gini simpson diversity does not seem to significantly differ across the different age groups
+wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # gini simpson diversity does not seem to significantly differ across the different age groups
 
 boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpson's diversity") # the boxplots are quite similar so this is not
 
@@ -478,11 +479,9 @@ t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB)
 
 # Non-normally distributed
 
-kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # none of the AB seem to significantly differ
+wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # none of the AB seem to significantly differ
 
 # Farm has more than 2 levels, so we will use ANOVAs
-
-boxplot(lib.div$diversity_shannon ~  sample_data(Rps)$Farm2, ylab="Shannon's diversity")
 
 aov.chao1.farm = aov(lib.div$chao1 ~ sample_data(Rps)$Farm2)
 summary(aov.chao1.farm)
@@ -519,6 +518,7 @@ kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Farm2)
 pairwise.wilcox.test(lib.div$diversity_gini_simpson, sample_data(Rps)$Farm2, p.adjust.method="fdr")
 
 # In addition, it could be interesting to look at the concentration of DNA as a continuous variable
+
 
 # Normally distributed
 
@@ -564,10 +564,15 @@ par(mfrow = c(1,2))
 plot(gaussian.gini_simpson.conc, which=c(1,2))
 qp.gini_simpson.conc = glm(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Conc...ng..µl., family="quasipoisson")
 par(mfrow = c(1,2))
-plot(qp.gini_simpson.conc, which=c(1,2))
+plot(qp.gini_simpson.conc, which=c(1,2)) # there are no huge differences between normal model (gaussian) and quasipoisson, we will use the latter regardless
 summary(qp.gini_simpson.conc)
 par(mfrow = c(1, 1))
 #Plot
 plot(log(lib.div$diversity_gini_simpson) ~ sample_data(Rps)$Conc...ng..µl., ylab="ln(Chao's richness)")
 abline(qp.gini_simpson.conc)
+
+# repeated measures, look at second guide to figure this out
+
+rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(Rps)$AB + (1|sample_data(Rps)$Farm2))
+summary(rm.shannon.all)
 
