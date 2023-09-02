@@ -7,6 +7,7 @@ library(ggpubr)
 library(DT)
 library(data.table)
 library(tidyverse)
+library(readxl)
 library(pheatmap)
 library(picante)
 library(nlme)
@@ -19,10 +20,12 @@ Rps_tpm = readRDS("Phyloseq_tpm") #
 
 #We rewrite the sample names to a format filtering out Firm and firm and the first underscore so that it lines up with the column of our meta data
 sample_names(Rps) = sapply(regmatches(sample_names(Rps), regexpr("_", sample_names(Rps)), invert = TRUE), "[[", 2) 
+sample_names(Rps_tpm) = sapply(regmatches(sample_names(Rps_tpm), regexpr("_", sample_names(Rps_tpm)), invert = TRUE), "[[", 2) 
 
 # Because the names in both metadata sets do not completely overlap, we need to manually edit one of the samples whose name was not included in the FIRM metadata file
-
 sample_names(Rps)[68] = "4_65"
+sample_names(Rps_tpm)[68] = "4_65"
+
 
 # reading in and combining metadata from 16S and metagenomic origins, adding missing underscores
 firm_names = read_excel("./Metagenomic/FIRM_MetaNames.xlsx")
@@ -83,6 +86,8 @@ plot_bar(ps_rel_abund, fill = "AMR_class_primary") +
         axis.ticks.x=element_blank())
 
 
+# visualisation on primary AMR classes, more data for samples which have not been treated with AB, but also many more samples in this group (21 (I think) vs 99)
+
 ps_prim <- phyloseq::tax_glom(Rps, "AMR_class_primary")
 taxa_names(ps_prim) <- phyloseq::tax_table(ps_prim)[, "AMR_class_primary"]
 
@@ -128,3 +133,11 @@ sample_data(Rps)$FlockSize = as.factor(sample_data(Rps)$FlockSize)
 sample_data(Rps)$AgeParentStock = as.factor(sample_data(Rps)$AgeParentStock)
 sample_data(Rps)$Age = as.factor(sample_data(Rps)$Age)
 sample_data(Rps)$LibraryNumber = as.factor(sample_data(Rps)$LibraryNumber)
+
+# repeat for TPM
+sample_data(Rps_tpm)$Cluster = as.factor(sample_data(Rps)$Cluster)
+sample_data(Rps_tpm)$FlockSize = as.factor(sample_data(Rps)$FlockSize)
+sample_data(Rps_tpm)$AgeParentStock = as.factor(sample_data(Rps)$AgeParentStock)
+sample_data(Rps_tpm)$Age = as.factor(sample_data(Rps)$Age)
+sample_data(Rps_tpm)$LibraryNumber = as.factor(sample_data(Rps)$LibraryNumber)
+

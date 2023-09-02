@@ -432,12 +432,11 @@ shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distrib
 # Fairly small sample sizes however, and the shaprio-wilk test is not perfect, we will assume normality for all measures except for Gini-simpson diversity based on the graphs
 # The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
 
-# We will run ANOVAs for the normally distributed measures
+# We will run ANOVAs for the normally distributed variables
 
 # Age
 
 # Normally distributed with only 2 levels, so we can use t-tests : 
-# vis : #boxplot(lib.div$diversity_shannon ~  sample_data(Rps)$Age, ylab="Shannon's diversity")
 
 t.test(lib.div$chao1 ~ sample_data(Rps)$Age)
 
@@ -458,28 +457,33 @@ t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
 
 wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # gini simpson diversity does not seem to significantly differ across the different age groups
 
-boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpson's diversity") # the boxplots are quite similar so this is not
+boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpson's diversity") # the boxplots are quite similar so this is not unexpected
 
+# For age, the groups seems significantly different in chao1, shannon, fisher diversity and simpson evenness, but not in gini-simpson, inverse simpson diversity, and pielou evenness.
 
 # Antibiotics
 
-t.test(lib.div$chao1 ~ sample_data(Rps)$AB)
+t.test(lib.div$chao1 ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB)
+t.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB)
+t.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB)
+t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$evenness_simpson ~ sample_data(Rps)$AB)
+t.test(lib.div$evenness_simpson ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB)
+t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB)
+t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB) # not significant
 
 # Non-normally distributed
 
-wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # none of the AB seem to significantly differ
+wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) 
+
+boxplot(lib.div$evenness_pielou ~ sample_data(Rps)$AB, ylab="pieloe") # the boxplots are quite similar so this is not unexpected
+
+# AB does not seem to significantly differ in their alpha diversities 
 
 # Farm has more than 2 levels, so we will use ANOVAs
 
@@ -570,6 +574,19 @@ par(mfrow = c(1, 1))
 #Plot
 plot(log(lib.div$diversity_gini_simpson) ~ sample_data(Rps)$Conc...ng..µl., ylab="ln(Chao's richness)")
 abline(qp.gini_simpson.conc)
+
+
+# Mixed models, variables might not be independent
+
+aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age*sample_data(Rps)$Farm2)
+summary(aov.shannon.all)
+
+aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age+sample_data(Rps)$Farm2)
+summary(aov.shannon.all2)
+
+
+aov.shannon.age_AB = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age*sample_data(Rps)$AB)
+summary(aov.shannon.age_AB)
 
 # repeated measures, look at second guide to figure this out
 

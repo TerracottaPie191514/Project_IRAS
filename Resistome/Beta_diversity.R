@@ -1,58 +1,11 @@
 library(microbiomeDataSets)
 library(scater)
 library(mia)
+library(vegan)
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 
-filt.rar=data.frame(otu_table(Rps))
-
-#sample_data(Rps)$Age = as.factor(sample_data(Rps)$Age)
-
-
-# PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
-
-# Transpose OTU table, and use farm as group structure
-simper(t(otu_table(Rps)), sample_data(Rps)$Farm2, permutations = 999)
-
-names(s)
-
-
-
-s
-
-kruskal_abundance(Rps, "Farm2")
-kruskal_abundance(Rps@otu_table["tet(O/32/O)_5_FP929050"], sample_data(Rps)$Age)
-
-
-
-
-test = subset_taxa(Rps, rownames(tax_table(Rps)) %in% c("tet(O/32/O)_5_FP929050", "tet(O/W/32/O)_1_EF065523"))
-
-
-
-kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
-
-
-
-
-kruskal.test(test@otu_table["tet(O/32/O)_5_FP929050"] ~ as.factor(sample_data(test)$Age))
-
-kruskal_abundance()
-
-simper(Rps@otu_table, permutations = 5)
-
-pcoa_bc = ordinate(Rps, "PCoA", "bray") 
-
-plot_ordination(Rps, pcoa_bc, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Bray Curtis Age", color = "Age", shape = "Antibiotics used")
-
-plot_ordination(Rps, pcoa_bc, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Bray Curtis Farms",color = "Farms", shape = "Antibiotics used")
-
-#plot_ordination(Rps, pcoa_bc, type = "taxa", color = "AMR_class_primary") + 
-#  geom_point(size = 3)  + labs(title = "PCoA primary AMR classes", color = "AMR_class_primary")
-
-# trying out some stuff
+# Visualizing different kinds of ordination methods
 
 dist = "bray"
 ord_meths = c("DCA", "CCA", "RDA", "DPCoA", "NMDS", "MDS", "PCoA")
@@ -74,6 +27,22 @@ ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) +
   facet_wrap(~method, scales="free") +
   scale_fill_brewer(type="qual", palette="Set1") +
   scale_colour_brewer(type="qual", palette="Set1")
+
+
+# PCoAs for different methods, with Age and Farm as colors, and AB as shape
+
+# (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
+
+pcoa_bc = ordinate(Rps, "PCoA", "bray") 
+
+plot_ordination(Rps, pcoa_bc, color = "Age", shape = "AB") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray Curtis Age", color = "Age", shape = "Antibiotics used")
+
+plot_ordination(Rps, pcoa_bc, color = "Farm2", shape = "AB") + 
+  geom_point(size = 3) + labs(title = "PCoA Bray Curtis Farms",color = "Farms", shape = "Antibiotics used")
+
+#plot_ordination(Rps, pcoa_bc, type = "taxa", color = "AMR_class_primary") + 
+#  geom_point(size = 3)  + labs(title = "PCoA primary AMR classes", color = "AMR_class_primary")
 
 
 plot_ordination(Rps, pcoa_bc, type = "split", color = "AMR_class_primary", shape = "AB") + 
@@ -115,7 +84,7 @@ plot_ordination(Rps, pcoa_jaccard, color = "Age", shape = "AB") +
 plot_ordination(Rps, pcoa_jaccard, color = "Farm2", shape = "AB") + 
   geom_point(size = 3) + labs(title = "PCoA Jaccard Farms",color = "Farms", shape = "Antibiotics used")
 
-# added plot to look at concentration with a red green gradient
+# plot to look at concentration with a red/green gradient
 
 plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", label = "FarmRoundStable") + 
   geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "Conc...ng..µl.", shape = "Antibiotics used") +
@@ -128,18 +97,6 @@ plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", labe
 plot_scree(pcoa_jsd) #scree plots can be made for any of the PCoAs
 
 
-psotu2veg <- function(physeq) {
-  OTU <- otu_table(physeq)
-  if (taxa_are_rows(OTU)) {
-    OTU <- t(OTU)
-  }
-  return(as(OTU, "matrix"))
-}
-
-library(vegan)
-Rps_veg = psotu2veg(Rps)
-dist_bray = vegdist(Rps_veg, "bray")
-betadisper(unifrac.dist,"Age")
 
 # plots for AB where age = 35 (deprecated)
 Rps@sam_data$Age==35
@@ -164,6 +121,8 @@ ps1.rel <- microbiome::transform(Rps, "compositional")
 
 metadf <- data.frame(sample_data(ps1.rel))
 
+
+# waar komt dit vandaan? en het is weighted!?
 unifrac.dist <- UniFrac(ps1.rel, 
                         weighted = TRUE, 
                         normalized = TRUE,  
@@ -180,6 +139,22 @@ tse2 <- runNMDS(tse2, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
 
 plotReducedDim(tse2, "BC", colour_by = "Age")
 
+# Significance
+
+psotu2veg <- function(physeq) {
+  OTU <- otu_table(physeq)
+  if (taxa_are_rows(OTU)) {
+    OTU <- t(OTU)
+  }
+  return(as(OTU, "matrix"))
+}
+
+Rps_veg = psotu2veg(Rps)
+dist_bray = vegdist(Rps_veg, "bray")
+betadisper(unifrac.dist,"Age")
+
+adonis2(dist_bray ~ Age, data = metadf)
+
 
 permanova_age <- adonis2(unifrac.dist ~ Age, data = metadf)
 permanova_AB <- adonis2(unifrac.dist ~ AB, data = metadf)
@@ -187,8 +162,48 @@ permanova_farm <- adonis2(unifrac.dist ~ Farm2, data = metadf)
 permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
 permanova_researcher <- adonis2(unifrac.dist ~ Researcher, data = metadf)
 permanova_LitterType <- adonis2(unifrac.dist ~ LitterType, data = metadf)
-permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
 
 
 ps.disper <- betadisper(unifrac.dist, metadf$Age)
 permutest(ps.disper, pairwise = TRUE)
+
+
+# Simper analyses to see which species are most impactful to BC dissimilarity between groups
+
+# Transpose OTU table, and use farm as group structure
+#simp_farm = simper(t(otu_table(Rps)), sample_data(Rps)$Farm2, permutations = 999)
+
+# Test for significance (OTU abundance will not be normally distributed so we will use kruskal wallis tests)
+
+source("../Results/Scripts/Steinberger_scripts/simper_pretty.r")
+source("../Results/Scripts/Steinberger_scripts/R_krusk.r")
+
+simper.pretty(otu_table(Rps), metrics = sample_data(Rps), interesting = c("Age", "AB", "Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "Rps")
+
+simper.results = data.frame(read.csv("Age_clean_simper.csv"))
+
+kruskal.pretty(otu_table(Rps), metrics = sample_data(Rps), csv = simper.results, interesting = c('Age'), output_name =  'Age')
+
+
+KW.results = data.frame(read.csv("Age_krusk_simper.csv"))
+
+KW.results = KW.results[KW.results$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+
+KW.results = KW.results[with(KW.results, order(OTU)),]
+head(KW.results)
+
+abund = otu_table(Rps)/rowSums(otu_table(Rps))*100
+
+
+
+boxplot(unlist(data.frame(abund["tet(O/32/O)_5_FP929050"])) ~ sample_data(Rps)$Age, ylab="% Relative abundance", main="OTU1")
+
+
+for (otu in KW.results$OTU) {
+  print(otu)
+  
+}
+
+kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+
+kruskal.test(unlist(data.frame(otu_table(test)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)
