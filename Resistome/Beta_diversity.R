@@ -1,14 +1,20 @@
-library(microbiomeDataSets)
-library(scater)
-library(mia)
-library(vegan)
+#library(microbiomeDataSets)
+library(scater) # plotReducedDim
+library(mia) # microbiome analysis package, making tse
+library(vegan) # used to run simper
+library(plyr)
+library(nlme) # ?
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 
-# Visualizing different kinds of ordination methods
+# Visualizing different kinds of ordination methods with BC distance matrix
+#currently struggling to implement DPCoA for some reason, plot_ordination gives an error with DPCoA ordination
+plot_ordination(Rps_tpm,  ordinate(Rps, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
+
+estimate_richness(Rps)
 
 dist = "bray"
-ord_meths = c("DCA", "CCA", "RDA", "DPCoA", "NMDS", "MDS", "PCoA")
+ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA")
 plist = llply(as.list(ord_meths), function(i, physeq, dist){
   ordi = ordinate(physeq, method=i, distance=dist)
   plot_ordination(physeq, ordi, "samples", color="Age", shape = "AB")
@@ -29,6 +35,14 @@ ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) +
   scale_colour_brewer(type="qual", palette="Set1")
 
 
+#`Looking at taxa spread as well
+plot_ordination(Rps,  ordinate(Rps, method = "DCA", distance="bray"), type = "split", color="Age", shape="AB")
+plot_ordination(Rps,  ordinate(Rps, method = "CCA", distance="bray"), type = "split", color="Age", shape="AB")
+plot_ordination(Rps,  ordinate(Rps, method = "RDA", distance="bray"), type = "split", color="Age", shape="AB")
+plot_ordination(Rps,  ordinate(Rps, method = "NMDS", distance="bray"), type = "split", color="Age", shape="AB")
+plot_ordination(Rps,  ordinate(Rps, method = "MDS", distance="bray"), type = "split", color="Age", shape="AB")
+plot_ordination(Rps,  ordinate(Rps, method = "PCoA", distance="bray"), type = "split", color="Age", shape="AB")
+`
 # PCoAs for different methods, with Age and Farm as colors, and AB as shape
 
 # (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
@@ -91,53 +105,31 @@ plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", labe
   scale_colour_gradient(low = "red", high = "green")
 
 
-
-#Rps.filtered <- core(Rps, detection = 10, prevalence = 0.05)
-
 plot_scree(pcoa_jsd) #scree plots can be made for any of the PCoAs
 
 
 
-# plots for AB where age = 35 (deprecated)
-Rps@sam_data$Age==35
-Rps2=subset_samples(Rps, Age == "35")
-
-
-unwt.unifrac <- plot_ordination(Rps, 
-                                ordu.unwt.uni, color="Farm2") 
-unwt.unifrac <- unwt.unifrac + ggtitle("Unweighted UniFrac") + geom_point(size = 2)
-unwt.unifrac <- unwt.unifrac + theme_classic() + scale_color_brewer("Farm2", palette = "Set2")
-unwt.unifrac
-ps1.rel <- microbiome::transform(Rps2, "compositional")
-ordu.wt.uni <- ordinate(ps1.rel , "PCoA", "unifrac", weighted=T)
-wt.unifrac <- plot_ordination(ps1.rel, 
-                              ordu.wt.uni, color="AB") 
-wt.unifrac <- wt.unifrac + ggtitle("Weighted UniFrac") + geom_point(size = 2)
-wt.unifrac <- wt.unifrac + theme_classic() + scale_color_brewer("AB", palette = "Set2")
-print(wt.unifrac)
+# this is the same as above but looks different
+plot_ordination(Rps, 
+                pcoa_wunifrac, color="Farm2") + ggtitle("Unweighted UniFrac") + geom_point(size = 2) + 
+  theme_classic() + scale_color_brewer("Farm2", palette = "Set2")
 
 
 ps1.rel <- microbiome::transform(Rps, "compositional")
 
 metadf <- data.frame(sample_data(ps1.rel))
 
-
-# waar komt dit vandaan? en het is weighted!?
-unifrac.dist <- UniFrac(ps1.rel, 
-                        weighted = TRUE, 
-                        normalized = TRUE,  
-                        parallel = FALSE, 
-                        fast = TRUE)
+# NMDS
 
 tse2 = makeTreeSummarizedExperimentFromPhyloseq(Rps)
-tse2 <- relAbundanceCounts(tse2)
+tse2 %<>% relAbundanceCounts()
 
-tse2 <- transformCounts(tse2, method = "relabundance")
-tse2 <- runNMDS(tse2, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
+tse2 %<>%  transformCounts( method = "relabundance")
+tse2 %<>% runNMDS(FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
                     exprs_values = "relabundance",
                     keep_dist = TRUE)
 
-plotReducedDim(tse2, "BC", colour_by = "Age")
+tse2 %>% plotReducedDim("BC", colour_by = "Age") 
 
 # Significance
 
@@ -148,6 +140,13 @@ psotu2veg <- function(physeq) {
   }
   return(as(OTU, "matrix"))
 }
+
+
+unifrac.dist <- UniFrac(ps1.rel, 
+                        weighted = TRUE, 
+                        normalized = TRUE,  
+                        parallel = FALSE, 
+                        fast = TRUE)
 
 Rps_veg = psotu2veg(Rps)
 dist_bray = vegdist(Rps_veg, "bray")
@@ -182,8 +181,16 @@ simper.pretty(otu_table(Rps), metrics = sample_data(Rps), interesting = c("Age",
 
 simper.results = data.frame(read.csv("Age_clean_simper.csv"))
 
+
+simper.results = data.frame(read.csv("Rps_clean_simper.csv"))
+
 kruskal.pretty(otu_table(Rps), metrics = sample_data(Rps), csv = simper.results, interesting = c('Age'), output_name =  'Age')
 
+
+kruskal.pretty(otu_table(Rps), metrics = sample_data(Rps), csv = simper.results, interesting = c('AB'), output_name =  'AB')
+
+
+class(sample_data(Rps))
 
 KW.results = data.frame(read.csv("Age_krusk_simper.csv"))
 
@@ -193,7 +200,6 @@ KW.results = KW.results[with(KW.results, order(OTU)),]
 head(KW.results)
 
 abund = otu_table(Rps)/rowSums(otu_table(Rps))*100
-
 
 
 boxplot(unlist(data.frame(abund["tet(O/32/O)_5_FP929050"])) ~ sample_data(Rps)$Age, ylab="% Relative abundance", main="OTU1")
@@ -206,4 +212,4 @@ for (otu in KW.results$OTU) {
 
 kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
 
-kruskal.test(unlist(data.frame(otu_table(test)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)

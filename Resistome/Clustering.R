@@ -16,10 +16,21 @@ library(sechm)
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
 
-Rps_new = subset_samples(Rps, Sample_Unique != "2_57")
+# Rps_new = subset_samples(Rps, Sample_Unique != "2_57")
+
+# use this for color schemes in heatmaps?
+library(viridis)
+
+x <- y <- seq(-8*pi, 8*pi, len = 40)
+r <- sqrt(outer(x^2, y^2, "+"))
+filled.contour(cos(r^2)*exp(-r/(2*pi)), 
+               axes=FALSE,
+               color.palette=viridis,
+               asp=1)
 
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(Rps_new)
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(Rps)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -544,3 +555,4 @@ sechm(tse_phylum,
       gaps_at = "AB",
       cluster_cols = TRUE, cluster_rows = TRUE)
 
+sessionInfo()

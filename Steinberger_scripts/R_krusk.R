@@ -97,6 +97,7 @@ kruskal.pretty = function(otu, metrics, csv, interesting, output_name, taxonomy)
     #saving topic containing var of interest (cola/colb) (less memory intensive)
     for(topic in interesting){
       #preventing crash if there is only one topic in interesting
+      topic1=topic
       if(is.null(unique(metrics[[topic]]))==TRUE){
         topic1=topic
         break
