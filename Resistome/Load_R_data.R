@@ -72,8 +72,8 @@ taxa_names(Rps) # ARGs
 Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S1")) %>% sample_sums() %>% sort()
 
 # absolute abundances
-plot_bar(Rps, fill="AMR_class_primary")
-plot_bar(Rps_tpm, fill="AMR_class_primary")
+plot_bar(Rps, fill="AMR_class_primary", title = "Absolute abundances per sample (FPKM)")
+plot_bar(Rps_tpm, fill="AMR_class_primary", title = "Absolute abundances per sample (TPM)")
 
 # Amount of different AMR classes present.
 sort(table(tax_table(Rps)[, "AMR_class_primary"]))

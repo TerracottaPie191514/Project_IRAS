@@ -3,7 +3,7 @@ library(scater) # plotReducedDim
 library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
 library(plyr)
-library(nlme) # ?
+library(nlme) # for usage of llply(), to apply functions over lists
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 
@@ -213,3 +213,8 @@ for (otu in KW.results$OTU) {
 kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
 
 kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+
+
+# declutter R environment by removing objects that no longer serve a purpose
+rm(KW.results, dist, ord_meths, pcoa_bc, pcoa_jaccard, pcoa_jsd, pcoa_unifrac, pcoa_wunifrac, simper.results, pdataframe, metadf)
+

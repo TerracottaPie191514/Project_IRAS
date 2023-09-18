@@ -1,9 +1,38 @@
-library(microbiomeDataSets)
-library(scater)
-library(mia)
-library(simpr)
+#library(microbiomeDataSets)
+library(scater) # plotReducedDim
+library(mia) # microbiome analysis package, making tse
+library(vegan) # used to run simper
+library(plyr)
+library(nlme) # for usage of llply(), to apply functions over lists
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
+
+plot_ordination(subset16S,  ordinate(subset16S, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
+
+estimate_richness(subset16S)
+
+dist = "bray"
+ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA")
+plist = llply(as.list(ord_meths), function(i, physeq, dist){
+  ordi = ordinate(physeq, method=i, distance=dist)
+  plot_ordination(physeq, ordi, "samples", color="Age", shape = "AB")
+}, subset16S, dist)
+
+names(plist) <- ord_meths
+
+pdataframe = ldply(plist, function(x){
+  df = x$data[, 1:2]
+  colnames(df) = c("Axis_1", "Axis_2")
+  return(cbind(df, x$data))
+})
+names(pdataframe)[1] = "method"
+ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) + 
+  geom_point(size=4) + 
+  facet_wrap(~method, scales="free") +
+  scale_fill_brewer(type="qual", palette="Set1") +
+  scale_colour_brewer(type="qual", palette="Set1")
+
+
 
 filt.rar=data.frame(otu_table(subset_mg))
 

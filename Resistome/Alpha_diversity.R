@@ -44,7 +44,7 @@ Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S1")) %>% veganotu() %>% goods() 
 lib.div <- microbiome::alpha(Rps, index = "all")
 lib.div2 <- richness(Rps)
 lib.div$ReadsPerSample <- sample_sums(Rps)
-lib.div$Observed <- lib.div2$observed
+lib.div$chao1 <- lib.div2$chao1
 colnames(lib.div)
 p1 <- ggscatter(lib.div, "diversity_shannon", "ReadsPerSample") +
   stat_cor(method = "pearson")
@@ -52,7 +52,7 @@ p2 <- ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",
                 add = "loess"
 ) +
   stat_cor(method = "pearson")
-p3 <- ggscatter(lib.div, "Observed", "ReadsPerSample",
+p3 <- ggscatter(lib.div, "chao1", "ReadsPerSample",
                 add = "loess") +
   stat_cor(
     method = "pearson",
@@ -84,7 +84,7 @@ ps_tpmcopy = Rps_tpm
 colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
 plot_taxa_prevalence(ps_tpmcopy, "Phylum") # TPM data
 
-# specific variables
+# specific variables ( niet wat er bedoeld werd, voor boxplots doen dit)
 
 # non-AB
 pscopy %>% ps_filter(AB == "no") %>% plot_taxa_prevalence("Phylum") + ggtitle("no")
@@ -127,8 +127,8 @@ div.df$Cox[div.df$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
 div.df$Cox[div.df$Cox == "narasin(monteban)"] = "Monteban"
 div.df$Cox[div.df$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
-div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
-colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
 
 
 div_df_melt <- reshape2::melt(div.df2)
@@ -180,8 +180,8 @@ stat_compare_means(
 
 # age / days
 
-div.df2 <- div.df[, c("Age", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
-colnames(div.df2) <- c("Age", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+div.df2 <- div.df[, c("Age", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Age", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
 
 div.df2$Age = as.factor(div.df2$Age)
 div_df_melt <- reshape2::melt(div.df2)
@@ -213,8 +213,8 @@ ggboxplot(hmp.meta,
 
 # farms / company
 
-div.df2 <- div.df[, c("Farm2", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
-colnames(div.df2) <- c("Farm", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+div.df2 <- div.df[, c("Farm2", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Farm", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
 
 div_df_melt <- reshape2::melt(div.df2)
 
@@ -254,8 +254,8 @@ ggboxplot(hmp.meta,
 
 # based on AB
 
-div.df2 <- div.df[, c("AB", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
-colnames(div.df2) <- c("AB", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+div.df2 <- div.df[, c("AB", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("AB", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
 
 
 div_df_melt <- reshape2::melt(div.df2)
@@ -288,7 +288,7 @@ ggboxplot(hmp.meta,
 
 # alternative way of plotting
 
-plot_richness(Rps, x="Age", measures=c("Observed", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"), color = "Age", nrow = 2)+
+plot_richness(Rps, x="Age", measures=c("chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"), color = "Age", nrow = 2)+
   geom_boxplot(alpha=0.6) + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12))
 
@@ -301,23 +301,20 @@ plot_richness(ps0.rar, x="Farm2", nrow = 2, color = "Farm2", title = "Alpha dive
 
 # Checking for normality
 
-hist(lib.div$observed, main="Observed richness", xlab="")
+hist(lib.div$chao1, main="chao1 richness", xlab="")
 hist(lib.div$diversity_shannon, main="Shannon diversity", xlab="")
 hist(lib.div$diversity_fisher, main="Fisher diversity", xlab="")
 hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
-hist(lib.div$evenness_simpson, main="Simpson evenness", xlab="")
-#hist(lib.div$evenness_simpson, main="Inverse Simpson evenness", xlab="")
 hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
 hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
 
 
 # If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
 # In this case, the data seems roughly normally distributed, we can use Shapiro-Wilk tests to test for normality for individual measures
-shapiro.test(lib.div$observed) # test deems it  normally distributed p>0,05
+shapiro.test(lib.div$chao1) # test deems it  normally distributed p>0,05
 shapiro.test(lib.div$diversity_shannon) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_fisher) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
-shapiro.test(lib.div$evenness_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed p>0,05
 
@@ -330,15 +327,13 @@ shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distrib
 
 # Normally distributed with only 2 levels, so we can use t-tests : 
 
-t.test(lib.div$observed ~ sample_data(Rps)$Age)
+t.test(lib.div$chao1 ~ sample_data(Rps)$Age)
 
 t.test(lib.div$diversity_shannon ~ sample_data(Rps)$Age) # shannon diversity does not seem to significantly differ across the different age groups
 
 t.test(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
 
 t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) 
-
-t.test(lib.div$evenness_simpson ~ sample_data(Rps)$Age)
 
 t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age) # not significant
 
@@ -347,15 +342,13 @@ t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
 
 # Non-normally distributed
 
-wilcox.test(lib.div$observed ~ sample_data(Rps)$Age)
+wilcox.test(lib.div$chao1 ~ sample_data(Rps)$Age)
 
 wilcox.test(lib.div$diversity_shannon ~ sample_data(Rps)$Age) # shannon diversity does not seem to significantly differ across the different age groups
 
 wilcox.test(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
 
 wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # remove this later
-
-wilcox.test(lib.div$evenness_simpson ~ sample_data(Rps)$Age)
 
 wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age) # not significant
 
@@ -364,11 +357,11 @@ wilcox.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age)
 
 boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpson's diversity") # the boxplots are quite similar so this is not unexpected
 
-# For age, the groups seems significantly different in observed, shannon, fisher diversity and simpson evenness, but not in gini-simpson, inverse simpson diversity, and pielou evenness.
+# For age, the groups seems significantly different in chao1, shannon, fisher diversity and simpson evenness, but not in gini-simpson, inverse simpson diversity, and pielou evenness.
 
 # Antibiotics
 
-t.test(lib.div$observed ~ sample_data(Rps)$AB) # not significant
+t.test(lib.div$chao1 ~ sample_data(Rps)$AB) # not significant
 
 t.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB) # not significant
 
@@ -376,23 +369,19 @@ t.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB) # not significant
 
 t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$evenness_simpson ~ sample_data(Rps)$AB) # not significant
-
 t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB) # not significant
 
 t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB) # not significant
 
 # Non-normally distributed
 
-wilcox.test(lib.div$observed ~ sample_data(Rps)$AB)
+wilcox.test(lib.div$chao1 ~ sample_data(Rps)$AB)
 
 wilcox.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB) # shannon diversity does not seem to significantly differ across the different AB groups
 
 wilcox.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB)
 
 wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # remove this later
-
-wilcox.test(lib.div$evenness_simpson ~ sample_data(Rps)$AB)
 
 wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB) # not significant
 
@@ -404,9 +393,9 @@ boxplot(lib.div$evenness_pielou ~ sample_data(Rps)$AB, ylab="pielou") # the boxp
 
 # Farm has more than 2 levels, so we will use ANOVAs
 
-aov.observed.farm = aov(lib.div$observed ~ sample_data(Rps)$Farm2)
-summary(aov.observed.farm)
-TukeyHSD(aov.observed.farm)  # it seems that Farm 1 differs significantly from Farm 2 and 3 but not 4. Farm 2 differs from 1 and 4 but not 3, Farm 3 and 4 differ as well. ( 3 and 2 are similar, and 4 and 1 are similar)
+aov.chao1.farm = aov(lib.div$chao1 ~ sample_data(Rps)$Farm2)
+summary(aov.chao1.farm)
+TukeyHSD(aov.chao1.farm)  # it seems that Farm 1 differs significantly from Farm 2 and 3 but not 4. Farm 2 differs from 1 and 4 but not 3, Farm 3 and 4 differ as well. ( 3 and 2 are similar, and 4 and 1 are similar)
 
 aov.shannon.farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Farm2)
 summary(aov.shannon.farm)
@@ -420,10 +409,6 @@ aov.gini_simpson.farm = aov(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Fa
 summary(aov.gini_simpson.farm)
 TukeyHSD(aov.gini_simpson.farm)
 
-aov.simpson.farm = aov(lib.div$evenness_simpson ~ sample_data(Rps)$Farm2)
-summary(aov.simpson.farm)
-TukeyHSD(aov.simpson.farm)
-
 aov.inv_simpson.farm = aov(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Farm2)
 summary(aov.inv_simpson.farm)
 TukeyHSD(aov.inv_simpson.farm)
@@ -434,8 +419,8 @@ TukeyHSD(aov.pielou.farm)
 
 # Non-normally distributed
 
-kruskal.test(lib.div$observed ~ sample_data(Rps)$Farm2)
-pairwise.wilcox.test(lib.div$observed, sample_data(Rps)$Farm2, p.adjust.method="fdr")
+kruskal.test(lib.div$chao1 ~ sample_data(Rps)$Farm2)
+pairwise.wilcox.test(lib.div$chao1, sample_data(Rps)$Farm2, p.adjust.method="fdr")
 
 kruskal.test(lib.div$diversity_shannon ~ sample_data(Rps)$Farm2) # shannon diversity does not seem to significantly differ across the different Farm2 groups
 pairwise.wilcox.test(lib.div$diversity_shannon, sample_data(Rps)$Farm2, p.adjust.method="fdr")
@@ -445,9 +430,6 @@ pairwise.wilcox.test(lib.div$diversity_fisher, sample_data(Rps)$Farm2, p.adjust.
 
 kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Farm2) # remove this later
 pairwise.wilcox.test(lib.div$diversity_gini_simpson, sample_data(Rps)$Farm2, p.adjust.method="fdr")
-
-kruskal.test(lib.div$evenness_simpson ~ sample_data(Rps)$Farm2)
-pairwise.wilcox.test(lib.div$evenness_simpson, sample_data(Rps)$Farm2, p.adjust.method="fdr")
 
 kruskal.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Farm2) # not significant
 pairwise.wilcox.test(lib.div$diversity_inverse_simpson, sample_data(Rps)$Farm2, p.adjust.method="fdr")
@@ -462,10 +444,10 @@ pairwise.wilcox.test(lib.div$evenness_pielou, sample_data(Rps)$Farm2, p.adjust.m
 
 # Normally distributed
 
-glm.observed.age = glm(lib.div$observed ~ sample_data(Rps)$Conc...ng..µl.)
-summary(glm.observed.age)
-plot(lib.div$observed ~ sample_data(Rps)$Conc...ng..µl.)
-abline(glm.observed.age)
+glm.chao1.age = glm(lib.div$chao1 ~ sample_data(Rps)$Conc...ng..µl.)
+summary(glm.chao1.age)
+plot(lib.div$chao1 ~ sample_data(Rps)$Conc...ng..µl.)
+abline(glm.chao1.age)
 
 glm.shannon.age = glm(lib.div$diversity_shannon ~ sample_data(Rps)$Conc...ng..µl.)
 summary(glm.shannon.age)
@@ -481,11 +463,6 @@ glm.gini_simpson.age = glm(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Con
 summary(glm.gini_simpson.age)
 plot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Conc...ng..µl.)
 abline(glm.gini_simpson.age)
-
-glm.simpson.age = glm(lib.div$evenness_simpson ~ sample_data(Rps)$Conc...ng..µl.)
-summary(glm.simpson.age)
-plot(lib.div$evenness_simpson ~ sample_data(Rps)$Conc...ng..µl.)
-abline(glm.simpson.age)
 
 glm.inv_simpson.age = glm(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Conc...ng..µl.)
 summary(glm.inv_simpson.age)
@@ -536,6 +513,8 @@ rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(Rps)$AB + (1|sampl
 summary(rm.shannon.all)
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(p1, p2, p3, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.observed.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.observed.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
+rm(p1, p2, p3, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.chao1.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.chao1.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
 
 rm(aov.shannon.age_farm, aov.shannon.age_AB, aov.shannon.age_all, aov.simpson.farm)
+
+
