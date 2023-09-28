@@ -2,7 +2,7 @@
 library(scater) # plotReducedDim
 library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
-library(plyr)
+library(plyr) # for llply, to apply functions
 library(nlme) # for usage of llply(), to apply functions over lists
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
@@ -12,10 +12,10 @@ plot_ordination(subset16S,  ordinate(subset16S, method = "DPCoA", distance="bray
 estimate_richness(subset16S)
 
 dist = "bray"
-ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA")
+ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA", "DPCoA")
 plist = llply(as.list(ord_meths), function(i, physeq, dist){
-  ordi = ordinate(physeq, method=i, distance=dist)
-  plot_ordination(physeq, ordi, "samples", color="Age", shape = "AB")
+  ordi = ordinate(subset16S, method=i, distance=dist)
+  plot_ordination(subset16S, ordi, "samples", color="Age", shape = "AB")
 }, subset16S, dist)
 
 names(plist) <- ord_meths
@@ -30,84 +30,65 @@ ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) +
   geom_point(size=4) + 
   facet_wrap(~method, scales="free") +
   scale_fill_brewer(type="qual", palette="Set1") +
-  scale_colour_brewer(type="qual", palette="Set1")
+  scale_colour_brewer(type="qual", palette="Set1") +
+  ggtitle("Different ordination methods for 16S data (Bray-Curtis)")
 
 
 
-filt.rar=data.frame(otu_table(subset_mg))
+filt.rar=data.frame(otu_table(subset16S))
 
 dist_bc <- as.matrix(vegdist(filt.rar, method = "bray")) 
 
 dist_bc[1:5, 1:5]
-#sample_data(subset_mg)$Age = as.factor(sample_data(subset_mg)$Age)
+#sample_data(subset16S)$Age = as.factor(sample_data(subset16S)$Age)
 
 
 # PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
 
-pcoa_bc = ordinate(subset_mg, "PCoA", "bray") 
+# functionize plotting pcoa
+plot_pcoa_ordination <- function(data, pcoa, var, title) {
+  p <- plot_ordination(data, pcoa, color = var, shape = "AB") +
+    geom_point(size = 3) +
+    labs(title = title, color = var, shape = "Antibiotics used")
+  
+  return(p)
+}
 
-plot_ordination(subset_mg, pcoa_bc, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Bray Curtis", color = "Age", shape = "Antibiotics used")
-
-plot_ordination(subset_mg, pcoa_bc, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Bray Curtis",color = "Farms", shape = "Antibiotics used")
-
-
-
-pcoa_unifrac = ordinate(subset_mg, "PCoA", "unifrac") 
-
-
-plot_ordination(subset_mg, pcoa_unifrac, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA UniFrac",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(subset_mg, pcoa_unifrac, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA UniFrac",color = "Farms", shape = "Antibiotics used")
+pcoa_bc = ordinate(subset16S, "PCoA", "bray") 
+pcoa_unifrac = ordinate(subset16S, "PCoA", "unifrac") 
+pcoa_wunifrac = ordinate(subset16S, "PCoA", "wunifrac") 
+pcoa_jsd = ordinate(subset16S, "PCoA", "jsd") 
+pcoa_jaccard = ordinate(subset16S, "PCoA", "jaccard", binary=TRUE) 
 
 
-pcoa_wunifrac = ordinate(subset_mg, "PCoA", "wunifrac") 
+plot_pcoa_ordination(subset16S, pcoa_bc, "Age", "PCoA Bray Curtis")
+plot_pcoa_ordination(subset16S, pcoa_bc, "Farm2", "PCoA Bray Curtis")
 
+plot_pcoa_ordination(subset16S, pcoa_unifrac, "Age", "PCoA Unifrac")
+plot_pcoa_ordination(subset16S, pcoa_unifrac, "Farm2", "PCoA Unifrac")
 
-plot_ordination(subset_mg, pcoa_wunifrac, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA weighter UniFrac",color = "Age", shape = "Antibiotics used")
+plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Age", "PCoA Weighted Unifrac")
+plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Farm2", "PCoA Weighted Unifrac")
 
-plot_ordination(subset_mg, pcoa_wunifrac, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA weighted Unifrac",color = "Farms", shape = "Antibiotics used")
+plot_pcoa_ordination(subset16S, pcoa_jsd, "Age", "PCoA Jensen-Shannon Divergence")
+plot_pcoa_ordination(subset16S, pcoa_jsd, "Farm2", "PCoA Jensen-Shannon Divergence")
 
-pcoa_jsd = ordinate(subset_mg, "PCoA", "jsd") 
+plot_pcoa_ordination(subset16S, pcoa_jaccard, "Age", "PCoA Jaccard")
+plot_pcoa_ordination(subset16S, pcoa_jaccard, "Farm2", "PCoA Jaccard")
 
+plot_ordination(subset16S, pcoa_jaccard, color = "Age", shape = "AB", label = "FarmRoundStable") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
 
-plot_ordination(subset_mg, pcoa_jsd, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jensen-Shannon Divergence",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(subset_mg, pcoa_jsd, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Jensen-Shannon Divergence",color = "Farms", shape = "Antibiotics used")
-
-pcoa_jaccard = ordinate(subset_mg, "PCoA", "jaccard", binary=TRUE) 
-
-plot_ordination(subset_mg, pcoa_jaccard, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jaccard",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(subset_mg, pcoa_jaccard, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Jaccard",color = "Farms", shape = "Antibiotics used")
-
-
-
-#subset_mg.filtered <- core(subset_mg, detection = 10, prevalence = 0.05)
 
 plot_scree(pcoa_bc) #scree plots can be made for any of the PCoAs
 
 
-# plots for AB where age = 35 (depcrated)
-subset_mg@sam_data$Age==35
-subset_mg2=subset_samples(subset_mg, Age == "35")
-
-
-unwt.unifrac <- plot_ordination(subset_mg, 
+unwt.unifrac <- plot_ordination(subset16S, 
                                 ordu.unwt.uni, color="Farm2") 
 unwt.unifrac <- unwt.unifrac + ggtitle("Unweighted UniFrac") + geom_point(size = 2)
 unwt.unifrac <- unwt.unifrac + theme_classic() + scale_color_brewer("Farm2", palette = "Set2")
 unwt.unifrac
-ps1.rel <- microbiome::transform(subset_mg2, "compositional")
+ps1.rel <- microbiome::transform(subset16S2, "compositional")
 ordu.wt.uni <- ordinate(ps1.rel , "PCoA", "unifrac", weighted=T)
 wt.unifrac <- plot_ordination(ps1.rel, 
                               ordu.wt.uni, color="AB") 
@@ -125,7 +106,7 @@ unifrac.dist <- UniFrac(ps1.rel,
                         parallel = FALSE, 
                         fast = TRUE)
 
-tse2 = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+tse2 = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 tse2 <- relAbundanceCounts(tse2)
 
 tse2 <- transformCounts(tse2, method = "relabundance")
@@ -147,3 +128,48 @@ permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
 
 ps.disper <- betadisper(unifrac.dist, metadf$Age)
 permutest(ps.disper, pairwise = TRUE)
+
+
+source("../Results/Scripts/Steinberger_scripts/simper_pretty.r")
+source("../Results/Scripts/Steinberger_scripts/R_krusk.r")
+
+simper.pretty(otu_table(subset16S), metrics = sample_data(Rps), interesting = c("Age", "AB", "Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "16S")
+
+simper.results = data.frame(read.csv("16s_clean_simper.csv"))
+
+
+simper.results = data.frame(read.csv("Rps_clean_simper_16s.csv"))
+
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = simper.results, interesting = c('Age'), output_name =  'Age')
+
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = simper.results, interesting = c('AB'), output_name =  'AB')
+
+
+class(sample_data(subset16S))
+
+KW.results = data.frame(read.csv("Age_krusk_simper.csv"))
+
+KW.results = KW.results[KW.results$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+
+KW.results = KW.results[with(KW.results, order(OTU)),]
+head(KW.results)
+
+abund = otu_table(Rps)/rowSums(otu_table(Rps))*100
+
+
+boxplot(unlist(data.frame(abund["tet(O/32/O)_5_FP929050"])) ~ sample_data(Rps)$Age, ylab="% Relative abundance", main="OTU1")
+
+
+for (otu in KW.results$OTU) {
+  print(otu)
+  
+}
+
+kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+
+kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+
+
+# declutter R environment by removing objects that no longer serve a purpose
+rm(KW.results, dist, ord_meths, pcoa_bc, pcoa_jaccard, pcoa_jsd, pcoa_unifrac, pcoa_wunifrac, simper.results, pdataframe, metadf)
+

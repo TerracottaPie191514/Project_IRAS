@@ -46,21 +46,20 @@ lib.div2 <- richness(Rps)
 lib.div$ReadsPerSample <- sample_sums(Rps)
 lib.div$chao1 <- lib.div2$chao1
 colnames(lib.div)
-p1 <- ggscatter(lib.div, "diversity_shannon", "ReadsPerSample") +
+p1 = ggscatter(lib.div, "diversity_shannon", "ReadsPerSample", xlab = "Shannon diversity", add = "loess") +
   stat_cor(method = "pearson")
-p2 <- ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",
-                add = "loess"
-) +
+p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "Inverse Simpson diversity", add = "loess") +
   stat_cor(method = "pearson")
-p3 <- ggscatter(lib.div, "chao1", "ReadsPerSample",
-                add = "loess") +
-  stat_cor(
-    method = "pearson",
-    label.x = 100,
-    label.y = 50000
-  )
+p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
+  stat_cor(method = "pearson")
 
-ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
+df.pd <- pd(t(as.data.frame(subsetMG@otu_table)), subsetMG@phy_tree,include.root=T) # transposing for use in picante
+lib.div$Phylogenetic_Diversity <- df.pd$PD
+
+p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
+  stat_cor(method = "pearson")
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 
 # we can clearly see an increase in reads/sample when increasing abundance, so we require a rarefaction for FPKM data
 
@@ -83,6 +82,9 @@ plot_taxa_prevalence(pscopy, "Phylum") # Sadly we can see entire phyla disappear
 ps_tpmcopy = Rps_tpm
 colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
 plot_taxa_prevalence(ps_tpmcopy, "Phylum") # TPM data
+
+
+# srs_p() gebruiken (QsRutils)
 
 # specific variables ( niet wat er bedoeld werd, voor boxplots doen dit)
 
@@ -307,6 +309,9 @@ hist(lib.div$diversity_fisher, main="Fisher diversity", xlab="")
 hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
 hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
 hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
+hist(lib.div$diversity_coverage, main="Coverage diversity", xlab="")
+
+
 
 
 # If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
@@ -317,6 +322,8 @@ shapiro.test(lib.div$diversity_fisher) # test deems this measure not normally di
 shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed p>0,05
+shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p>0,05
+
 
 # Fairly small sample sizes however, and the shaprio-wilk test is not perfect, we will assume normality for all measures except for Shannon and Gini-simpson diversity based on the graphs
 # The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
@@ -336,6 +343,8 @@ t.test(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
 t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) 
 
 t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age) # not significant
+
+t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
 
 t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
 

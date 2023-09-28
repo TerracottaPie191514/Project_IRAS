@@ -2,7 +2,7 @@
 library(scater) # plotReducedDim
 library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
-library(plyr)
+library(plyr) # for llply, to apply functions
 library(nlme) # for usage of llply(), to apply functions over lists
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
@@ -47,13 +47,36 @@ plot_ordination(Rps,  ordinate(Rps, method = "PCoA", distance="bray"), type = "s
 
 # (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
 
-pcoa_bc = ordinate(Rps, "PCoA", "bray") 
+plot_pcoa_ordination <- function(data, pcoa, var, title) {
+  p <- plot_ordination(data, pcoa, color = var, shape = "Antibiotics used") +
+    geom_point(size = 3) +
+    labs(title = title, color = var, shape = "Antibiotics used")
+  
+  return(p)
+}
 
-plot_ordination(Rps, pcoa_bc, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Bray Curtis Age", color = "Age", shape = "Antibiotics used")
+pcoa_bc = ordinate(subset16S, "PCoA", "bray") 
+pcoa_unifrac = ordinate(subset16S, "PCoA", "unifrac") 
+pcoa_wunifrac = ordinate(subset16S, "PCoA", "wunifrac") 
+pcoa_jsd = ordinate(subset16S, "PCoA", "jsd") 
+pcoa_jaccard = ordinate(subset16S, "PCoA", "jaccard", binary=TRUE) 
 
-plot_ordination(Rps, pcoa_bc, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Bray Curtis Farms",color = "Farms", shape = "Antibiotics used")
+
+plot_pcoa_ordination(subset16S, pcoa_bc, "Age", "PCoA Bray Curtis")
+plot_pcoa_ordination(subset16S, pcoa_bc, "Farm2", "PCoA Bray Curtis")
+
+plot_pcoa_ordination(subset16S, pcoa_unifrac, "Age", "PCoA Unifrac")
+plot_pcoa_ordination(subset16S, pcoa_unifrac, "Farm2", "PCoA Unifrac")
+
+plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Age", "PCoA Weighted Unifrac")
+plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Farm2", "PCoA Weighted Unifrac")
+
+plot_pcoa_ordination(subset16S, pcoa_jsd, "Age", "PCoA Jensen-Shannon Divergence")
+plot_pcoa_ordination(subset16S, pcoa_jsd, "Farm2", "PCoA Jensen-Shannon Divergence")
+
+plot_pcoa_ordination(subset16S, pcoa_jaccard, "Age", "PCoA Jaccard")
+plot_pcoa_ordination(subset16S, pcoa_jaccard, "Farm2", "PCoA Jaccard")
+
 
 #plot_ordination(Rps, pcoa_bc, type = "taxa", color = "AMR_class_primary") + 
 #  geom_point(size = 3)  + labs(title = "PCoA primary AMR classes", color = "AMR_class_primary")
@@ -64,39 +87,6 @@ plot_ordination(Rps, pcoa_bc, type = "split", color = "AMR_class_primary", shape
 
 pcoa_unifrac = ordinate(Rps, "PCoA", "unifrac") 
 
-
-plot_ordination(Rps, pcoa_unifrac, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA UniFrac Age",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(Rps, pcoa_unifrac, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA UniFrac Farms",color = "Farms", shape = "Antibiotics used")
-
-
-pcoa_wunifrac = ordinate(Rps, "PCoA", "wunifrac") 
-
-
-plot_ordination(Rps, pcoa_wunifrac, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA weighter UniFrac Age",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(Rps, pcoa_wunifrac, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA weighted Unifrac Farms",color = "Farms", shape = "Antibiotics used")
-
-pcoa_jsd = ordinate(Rps, "PCoA", "jsd") 
-
-
-plot_ordination(Rps, pcoa_jsd, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jensen-Shannon Divergence Age",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(Rps, pcoa_jsd, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Jensen-Shannon Divergence Farms",color = "Farms", shape = "Antibiotics used")
-
-pcoa_jaccard = ordinate(Rps, "PCoA", "jaccard", binary=TRUE) 
-
-plot_ordination(Rps, pcoa_jaccard, color = "Age", shape = "AB") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
-
-plot_ordination(Rps, pcoa_jaccard, color = "Farm2", shape = "AB") + 
-  geom_point(size = 3) + labs(title = "PCoA Jaccard Farms",color = "Farms", shape = "Antibiotics used")
 
 # plot to look at concentration with a red/green gradient
 

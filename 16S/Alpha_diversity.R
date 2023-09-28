@@ -25,21 +25,20 @@ lib.div2 <- richness(subset16S)
 lib.div$ReadsPerSample <- sample_sums(subset16S)
 lib.div$Observed <- lib.div2$observed
 colnames(lib.div)
-p1 <- ggscatter(lib.div, "diversity_shannon", "ReadsPerSample") +
+p1 = ggscatter(lib.div, "diversity_shannon", "ReadsPerSample", xlab = "Shannon diversity", add = "loess") +
   stat_cor(method = "pearson")
-p2 <- ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",
-                add = "loess"
-) +
+p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "Inverse Simpson diversity", add = "loess") +
   stat_cor(method = "pearson")
-p3 <- ggscatter(lib.div, "Observed", "ReadsPerSample",
-                add = "loess") +
-  stat_cor(
-    method = "pearson",
-    label.x = 100,
-    label.y = 50000
-  )
+p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
+  stat_cor(method = "pearson")
 
-ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
+df.pd <- pd(t(as.data.frame(subsetMG@otu_table)), subsetMG@phy_tree,include.root=T) # transposing for use in picante
+lib.div$Phylogenetic_Diversity <- df.pd$PD
+
+p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
+  stat_cor(method = "pearson")
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 
 
 # remove samples with lower sequencing depth? not necessary for 16S dataset
@@ -238,6 +237,7 @@ hist(lib.div$diversity_fisher, main="Fisher diversity", xlab="")
 hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
 hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
 hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
+hist(lib.div$diversity_coverage, main="Coverage diversity", xlab="")
 
 
 # If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
@@ -248,6 +248,7 @@ shapiro.test(lib.div$diversity_fisher) # test deems this measure normally distri
 shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed p>0,05
+shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p>0,05
 
 # Based on shaprio-wilk tests we will assume normality for some measures 
 # The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
@@ -257,6 +258,8 @@ shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distrib
 # Age
 
 # Normally distributed with only 2 levels, so we can use t-tests : 
+
+sd(lib.div$diversity_fisher)
 
 t.test(lib.div$observed ~ sample_data(subset16S)$Age) # significant
 
@@ -272,6 +275,9 @@ wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(subset16S)$Age)  # sign
 wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(subset16S)$Age)  # significant
 
 wilcox.test(lib.div$evenness_pielou ~ sample_data(subset16S)$Age)  # significant
+
+wilcox.test(lib.div$diversity_coverage ~ sample_data(subset16S)$Age)  # significant
+
 
 
 # For age, the groups seems significantly different in all metrics except simpson evenness.
