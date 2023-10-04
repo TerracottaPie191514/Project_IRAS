@@ -10,12 +10,12 @@ otu_tab2 <- t(abundances(Rps_tpm))
 
 # rarefaction curve
 vegan::rarecurve(otu_tab,
-                      step = 50, label = TRUE,
+                      step = 50, label = FALSE,
                       sample = min(rowSums(otu_tab),
                                    col = "blue", cex = 0.6))
 
 # we can add lines to show sampling depths
-rarecurve(otu_tab, step=500)
+rarecurve(otu_tab, step=500, ylab = "ARGs", label = FALSE)
 abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
 
 
@@ -53,13 +53,15 @@ p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "
 p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
   stat_cor(method = "pearson")
 
-df.pd <- pd(t(as.data.frame(subsetMG@otu_table)), subsetMG@phy_tree,include.root=T) # transposing for use in picante
+df.pd <- pd(t(as.data.frame(Rps@otu_table)), Rps@phy_tree,include.root=T) # transposing for use in picante
 lib.div$Phylogenetic_Diversity <- df.pd$PD
 
 p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
   stat_cor(method = "pearson")
 
 ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+p4
 
 # we can clearly see an increase in reads/sample when increasing abundance, so we require a rarefaction for FPKM data
 
@@ -147,7 +149,7 @@ ggboxplot(div_df_melt, x = "Agent", y = "value",
                title = "FPKM Alpha diversity metrics by microbial agent") + 
   rremove("x.text") + stat_compare_means(
     comparisons = L.pairs,
-    method = "t.test",
+    method = "wilcox.test",
     label = "p.signif"
     )
 
@@ -196,7 +198,7 @@ ggboxplot(div_df_melt, x = "Age", y = "value",
           scales = "free",
           title = "FPKM Alpha diversity metrics by age") + 
   rremove("x.text") + stat_compare_means(
-    method = "t.test",)
+    method = "wilcox.test",)
 
 
 ggboxplot(hmp.meta,
@@ -210,7 +212,7 @@ ggboxplot(hmp.meta,
           title = "FPKM phylogenetic diversity by age"
 ) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
-  stat_compare_means(method = "t.test", paired = TRUE)
+  stat_compare_means(method = "wilcox.test", paired = TRUE)
     
 
 # farms / company
@@ -230,11 +232,11 @@ ggboxplot(div_df_melt, x = "Farm", y = "value",
           legend= "right",
           facet.by = "variable",
           scales = "free",
-          title = "FPKM Alpha diversity metrics by farm") + rotate_x_text() + rremove("x.text") + stat_compare_means(
-  comparisons = L.pairs,
-  method = "t.test",
-  label = "p.signif"
-)
+          order = lev,
+          title = "FPKM Alpha diversity metrics by farm") + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "wilcox.test",
+                                                                                                                comparisons = L.pairs,
+                                                                                                                label = "p.signif"
+          )
 
 
 ggboxplot(hmp.meta,
@@ -245,6 +247,7 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Farm",
           legend = "right",
+          order = lev,
           title = "FPKM phylogenetic diversity by farm"
 ) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
@@ -270,7 +273,7 @@ ggboxplot(div_df_melt, x = "AB", y = "value",
           scales = "free",
           title = "FPKM Alpha diversity metrics by antibiotic usage") + 
   rremove("x.text") + stat_compare_means(
-    method = "t.test")
+    method = "wilcox.test")
 
 
 ggboxplot(hmp.meta,
@@ -372,19 +375,17 @@ boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpso
 
 t.test(lib.div$chao1 ~ sample_data(Rps)$AB) # not significant
 
-t.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB) # not significant
-
-t.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB) # not significant
-
-t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # not significant
-
-t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB) # not significant
-
 t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB) # not significant
+
+# used these functions to get means and sd per variable and alpha diversity metric
+lib.div.ab = lib.div
+lib.div.ab$AB = sample_data(Rps)$AB
+
+aggregate(lib.div.ab$evenness_pielou, list(lib.div.ab$AB), FUN=mean) 
+aggregate(lib.div.ab$evenness_pielou, list(lib.div.ab$AB), FUN=sd) 
 
 # Non-normally distributed
 
-wilcox.test(lib.div$chao1 ~ sample_data(Rps)$AB)
 
 wilcox.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB) # shannon diversity does not seem to significantly differ across the different AB groups
 
@@ -394,7 +395,7 @@ wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # remove this 
 
 wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB) # not significant
 
-wilcox.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB) 
+wilcox.test(lib.div$diversity_coverage ~ sample_data(Rps)$AB) 
 
 boxplot(lib.div$evenness_pielou ~ sample_data(Rps)$AB, ylab="pielou") # the boxplots are quite similar so this is not unexpected
 

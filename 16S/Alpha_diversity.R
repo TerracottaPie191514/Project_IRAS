@@ -14,6 +14,9 @@ vegan::rarecurve(otu_tab,
                                    col = "blue", cex = 0.6))
 # samples plateau so sufficient sequencing depth
 
+rarecurve(otu_tab, step=50)
+abline(v=sample_sums(subset16S), lty='dotted', lwd=0.5)
+
 summary(goods(otu_tab)) # there are no singletons in this data, already filtered out, means that richness estimates are probably unreliable or wrong?
 
 
@@ -32,7 +35,7 @@ p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "
 p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
   stat_cor(method = "pearson")
 
-df.pd <- pd(t(as.data.frame(subsetMG@otu_table)), subsetMG@phy_tree,include.root=T) # transposing for use in picante
+df.pd <- pd(t(as.data.frame(subset16S@otu_table)), subset16S@phy_tree,include.root=T) # transposing for use in picante
 lib.div$Phylogenetic_Diversity <- df.pd$PD
 
 p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
@@ -172,7 +175,7 @@ ggboxplot(div_df_melt, x = "Farm", y = "value",
           facet.by = "variable",
           scales = "free",
           order = lev,
-          title = "Alpha diversity metrics by farm") + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "t.test",
+          title = "Alpha diversity metrics by farm") + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "wilcox.test",
             comparisons = L.pairs,
             label = "p.signif"
           )
@@ -248,7 +251,10 @@ shapiro.test(lib.div$diversity_fisher) # test deems this measure normally distri
 shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed p>0,05
-shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p>0,05
+shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p<0,05
+
+shapiro.test(lib.div$Phylogenetic_Diversity) # test deems this measure normally distributed p>0,05
+
 
 # Based on shaprio-wilk tests we will assume normality for some measures 
 # The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
@@ -259,11 +265,11 @@ shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally 
 
 # Normally distributed with only 2 levels, so we can use t-tests : 
 
-sd(lib.div$diversity_fisher)
-
 t.test(lib.div$observed ~ sample_data(subset16S)$Age) # significant
 
 t.test(lib.div$diversity_fisher ~ sample_data(subset16S)$Age)  # significant
+
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(subset16S)$Age)  # significant
 
 
 # Non-normally distributed
@@ -288,6 +294,9 @@ t.test(lib.div$observed ~ sample_data(subset16S)$AB) # significant
 
 t.test(lib.div$diversity_fisher ~ sample_data(subset16S)$AB) # significant
 
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(subset16S)$AB)  # significant
+
+
 # Non-normally distributed
 
 wilcox.test(lib.div$diversity_shannon ~ sample_data(subset16S)$AB) # shannon diversity does not seem to significantly differ across the different AB groups
@@ -298,7 +307,21 @@ wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(subset16S)$AB) # not
 
 wilcox.test(lib.div$evenness_pielou ~ sample_data(subset16S)$AB) # not significant
 
+wilcox.test(lib.div$diversity_coverage ~ sample_data(subset16S)$AB) # not significant
+
+
+
 boxplot(lib.div$diversity_fisher ~ sample_data(subset16S)$AB, ylab="fisher") # the boxplots are quite similar so this is not unexpected
+
+diversity_coverage
+
+# used these functions to get means and sd per variable and alpha diversity metric
+lib.div.ab = lib.div
+lib.div.ab$AB = sample_data(subset16S)$AB
+
+aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=mean) 
+aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=sd) 
+
 
 
 # AB does not seem to significantly differ in their alpha diversities except for observed and fisher diversity

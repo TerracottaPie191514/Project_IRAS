@@ -193,7 +193,13 @@ subsetMG %>%
 # relabundance with other category
 subsetMG.rel <- microbiome::transform(subsetMG, "compositional")
 
-plot_composition(subsetMG.rel, sample.sort = "FarmRoundStable", x.label = "Id") + theme(legend.position = "bottom") +
+plot_composition(subsetMG) + theme(legend.position = "bottom") +
+  scale_fill_brewer("Phylum", palette = "Paired") + theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("Relative abundance") + theme(legend.title = element_text(size = 18))
+
+
+plot_composition(subsetMG.rel, x.label = "Id") + theme(legend.position = "bottom") +
  scale_fill_brewer("Phylum", palette = "Paired") + theme_bw() + theme(axis.text.x = element_text(angle = 90))  + 
   ggtitle("Relative abundance") + theme(legend.title = element_text(size = 18))
 
