@@ -1,11 +1,12 @@
-library(mia)
-library(bluster)
+#### Load packages
+library(mia) # Broad package, includes clustering functions
+library(bluster) # Used for clustering
 library(scater)
-library(scran)
-library(NbClust)
+library(scran) # A wrapper for bluster and tse objects
+library(NbClust) # To find out the optimal number of clusters
 library(cobiclust)
-library(dendextend)
-library(factoextra)
+library(dendextend) # For creating dendrograms with additional options
+library(factoextra) # Visualize optomial number of clusters
 library(miaViz)
 library(patchwork)
 library(pheatmap)
@@ -14,16 +15,12 @@ library(biclust)
 library(ecodist)
 library(sechm)
 
-# used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
+# used the following guide: https://microbiome.github.io/OMA/clustering.html
+# Hierarchal clustering
 
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
 
 tse <- transformCounts(tse, method = "relabundance")
-
-x <- t(assay(tse, "relabundance"))
-hclust.out <- clusterRows(x, HclustParam())
-colData(tse)$clusters <- hclust.out
-hclust.out$clusters
 
 tse <- runMDS(tse,
               assay.type = "relabundance",
@@ -31,7 +28,27 @@ tse <- runMDS(tse,
               method = "bray"
 )
 
+
+assay <- assay(tse, "relabundance")
+assay <- t(assay)
+diss_bray <- vegdist(assay, method = "bray")
+hc_bray <- hclust(diss_bray, method = "complete")
+plot(hc_bray)
+hcd = as.dendrogram(hc_bray)
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+               "#0072B2", "#D55E00", "#CC79A7")
+
+colorCode <- c(Control=cbPalette[2], CRC = cbPalette[3])
+# just a character vector
+labels_colors(hcd) <- colorCode[subsetMG$Groups][order.dendrogram(hcd)]
+plot(hcd)
+
+
+
 plotReducedDim(tse, "MDS", colour_by = "clusters")
+
+
 
 hclust.out <- clusterRows(x, HclustParam(method = "complete"), full = TRUE)
 colData(tse)$clusters <- hclust.out$clusters
@@ -50,17 +67,16 @@ tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
 
 tse <- transformCounts(tse, method = "relabundance")
 
-assay <- assay(tse, "relabundance")
-assay <- t(assay)
 
-diss_bray <- vegdist(assay, method = "bray")
-hc_bray <- hclust(diss_bray, method = "complete")
+
+
 
 res_bray <- NbClust(
   diss = diss_bray, distance = NULL, method = "kmeans",
   index = "silhouette"
 )
 res_bray$Best.nc
+
 #cutree(hc, k = 3)
 #dendro
 
@@ -72,10 +88,6 @@ res_bray$Best.nc
 
 
 # Trying out different methods for finding optimal number of clusters:
-
-tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
-
-tse <- transformCounts(tse, method = "relabundance")
 
 assay <- assay(tse, "relabundance")
 assay <- t(assay)
@@ -100,7 +112,7 @@ diss_jaccard <- as.matrix(diss_jaccard)
 fviz_nbclust(diss_jaccard, kmeans, method = "silhouette")
 
 set.seed(1337)
-km <- kmeans(diss, 2, nstart = 25)
+km <- kmeans(diss_jaccard, 2, nstart = 25)
 colData(tse)$clusters <- as.factor(km$cluster)
 tse <- runMDS(tse, assay.type = "relabundance", FUN = vegan::vegdist, method = "bray")
 plotReducedDim(tse, "MDS", colour_by = "Farm2")
@@ -108,7 +120,7 @@ plotReducedDim(tse, "MDS", colour_by = "Farm2")
 
 
 #testing
-tse2 = makeTreeSummarizedExperimentFromPhyloseq(subsetG)
+tse2 = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
 tse2 <- agglomerateByRank(tse2, rank = "Genus", agglomerateTree = TRUE)
 
 
@@ -117,7 +129,6 @@ tse2 <- agglomerateByRank(tse2, rank = "Genus", agglomerateTree = TRUE)
   
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
 #agglomerateByRank(tse) 
-colnames(rowData(tse)) = c("Domain","Phylum","Class","Order") # Domain = AMR_class_primary, Phylum = AMR_class_secondary, Class = ARGCluster90, Order = ID_Clust_Refsequence
 tse <- agglomerateByRank(tse, rank = "Domain", agglomerateTree = TRUE) # this is not working
 tse_dmn <- mia::runDMN(tse, name = "DMN", k = 1:7)
 tse_dmn

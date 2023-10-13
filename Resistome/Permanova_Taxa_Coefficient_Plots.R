@@ -1,14 +1,15 @@
-library(vegan)
 
 # Used the following guides: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/multivariate-comparisons-of-microbial-community-composition.html, https://microbiome.github.io/course_2022_radboud/beta-diversity-demo.html
 
+tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse <- transformCounts(tse, method = "relabundance")
 
 tse_genus <- agglomerateByRank(tse, "Genus")
 tse_genus <- transformCounts(tse_genus, method = "relabundance")
 
 
-
-permanova_age <- adonis(t(assay(tse_genus, "relabundance")) ~ Age, data = colData(tse_genus), permutations = 9999)
+permanova_age <- adonis2(t(assay(tse_genus, "relabundance")) ~ Age, data = colData(tse_genus), permutations = 9999)
+permanova_age
 permanova_AB <- adonis(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999)
 permanova_cox <- adonis(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
 permanova_researcher <- adonis(t(assay(tse_genus, "relabundance")) ~ Researcher, data = colData(tse_genus), permutations = 9999)

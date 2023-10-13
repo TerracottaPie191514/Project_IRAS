@@ -1,3 +1,4 @@
+#### Load packages
 library(data.table) # Alternative to data.frame
 library(picante) # Used for calculating Phylogenetic diversities
 library(lme4) # Repeated measures, add to report if used
@@ -50,7 +51,7 @@ summary(sample_sums(subsetMG))
 
 set.seed(1337)
 
-ps0.rar <- rarefy_even_depth(subsetMG, sample.size = 682316)
+ps0.rar <- rarefy_even_depth(subsetMG, sample.size = 682316, rngseed = 456)
 
 ps0.rar
 
@@ -232,7 +233,7 @@ ggboxplot(hmp.meta,
 
 # Checking for normality
 
-hist(lib.div$observed, main="Observed richness", xlab="")
+hist(lib.div$chao1, main="Observed richness", xlab="")
 hist(lib.div$diversity_shannon, main="Shannon diversity", xlab="")
 hist(lib.div$diversity_fisher, main="Fisher diversity", xlab="")
 hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
@@ -243,13 +244,15 @@ hist(lib.div$diversity_coverage, main="Coverage diversity", xlab="")
 
 # If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
 # In this case, the data seems roughly normally distributed for some metrics, we can use Shapiro-Wilk tests to test for normality for individual measures
-shapiro.test(lib.div$observed) # test deems it  normally distributed p>0,05
+shapiro.test(lib.div$chao1) # test deems it  normally distributed p>0,05
 shapiro.test(lib.div$diversity_shannon) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_fisher) # test deems this measure normally distributed p>0,05
 shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure normally distributed p>0,05
 shapiro.test(lib.div$evenness_pielou) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p<0,05
+shapiro.test(lib.div$Phylogenetic_Diversity) # test deems this measure normally distributed p>0,05
+
 
 # Based on shaprio-wilk tests we will assume normality for some measures 
 # The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
@@ -260,11 +263,13 @@ shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally 
 
 # Normally distributed with only 2 levels, so we can use t-tests : 
 
-t.test(lib.div$observed ~ sample_data(subsetMG)$Age) # significant
+t.test(lib.div$chao1 ~ sample_data(subsetMG)$Age) # significant
 
 t.test(lib.div$diversity_fisher ~ sample_data(subsetMG)$Age)  # significant
 
 t.test(lib.div$diversity_inverse_simpson ~ sample_data(subsetMG)$Age)  # significant
+
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(subsetMG)$Age)  # significant
 
 
 # Non-normally distributed
@@ -273,24 +278,28 @@ wilcox.test(lib.div$diversity_shannon ~ sample_data(subsetMG)$Age) # shannon div
 
 wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(subsetMG)$Age)  # significant
 
-wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(subsetMG)$Age)  # significant
-
 wilcox.test(lib.div$evenness_pielou ~ sample_data(subsetMG)$Age)  # significant
 
 wilcox.test(lib.div$diversity_coverage ~ sample_data(subsetMG)$Age)  # significant
 
 
+lib.div.age = lib.div
+lib.div.ab$Age = sample_data(subsetMG)$Age
+
+aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$Age), FUN=mean) 
+aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$Age), FUN=sd) 
 
 # For age, the groups seems significantly different in all metrics except simpson evenness.
 
 # Antibiotics
 
-t.test(lib.div$observed ~ sample_data(subsetMG)$AB) 
+t.test(lib.div$chao1 ~ sample_data(subsetMG)$AB) 
 
 t.test(lib.div$diversity_fisher ~ sample_data(subsetMG)$AB)
 
 t.test(lib.div$diversity_inverse_simpson ~ sample_data(subsetMG)$AB) 
 
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(subsetMG)$AB)
 
 # Non-normally distributed
 
@@ -308,16 +317,16 @@ wilcox.test(lib.div$diversity_coverage ~ sample_data(subsetMG)$AB)  # significan
 lib.div.ab = lib.div
 lib.div.ab$AB = sample_data(subsetMG)$AB
 
-aggregate(lib.div.ab$evenness_pielou, list(lib.div.ab$AB), FUN=mean) 
-aggregate(lib.div.ab$evenness_pielou, list(lib.div.ab$AB), FUN=sd) 
+aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$AB), FUN=mean) 
+aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$AB), FUN=sd) 
 
 
 
 # Farm has more than 2 levels, so we will use ANOVAs for normally distributed metrics
 
-aov.observed.farm = aov(lib.div$observed ~ sample_data(subsetMG)$Farm2)
-summary(aov.observed.farm)
-TukeyHSD(aov.observed.farm) # only not significant between 1 and 4 and 3 and 2
+aov.chao1.farm = aov(lib.div$chao1 ~ sample_data(subsetMG)$Farm2)
+summary(aov.chao1.farm)
+TukeyHSD(aov.chao1.farm) # only not significant between 1 and 4 and 3 and 2
 
 aov.fisher.farm = aov(lib.div$diversity_fisher ~ sample_data(subsetMG)$Farm2)
 summary(aov.fisher.farm)
@@ -341,9 +350,9 @@ pairwise.wilcox.test(lib.div$evenness_pielou, sample_data(subsetMG)$Farm2, p.adj
 
 # agent also has more than 2 levels, so we will use ANOVAs for normally distributed metrics
 
-aov.observed.agent = aov(lib.div$observed ~ sample_data(subsetMG)$Cox)
-summary(aov.observed.agent)
-TukeyHSD(aov.observed.agent) # only not significant between sacox and monteban
+aov.chao1.agent = aov(lib.div$chao1 ~ sample_data(subsetMG)$Cox)
+summary(aov.chao1.agent)
+TukeyHSD(aov.chao1.agent) # only not significant between sacox and monteban
 
 aov.fisher.agent = aov(lib.div$diversity_fisher ~ sample_data(subsetMG)$Cox)
 summary(aov.fisher.agent)

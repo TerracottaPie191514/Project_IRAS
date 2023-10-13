@@ -1,5 +1,5 @@
-#library(microbiomeDataSets)
-library(scater) # plotReducedDim
+#### Load packages
+library(scater) # For functions like plotReducedDim(), calculating dissimiilarity matrices etc. 
 library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
 library(plyr) # for llply, to apply functions
@@ -7,9 +7,11 @@ library(nlme) #
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
 
+# single ordination visualisation
+
 plot_ordination(subsetMG,  ordinate(subsetMG, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
 
-estimate_richness(subsetMG)
+# Different ordination methods based on BC dissimilarity
 
 dist = "bray"
 ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA", "DPCoA")
@@ -32,16 +34,6 @@ ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) +
   scale_fill_brewer(type="qual", palette="Set1") +
   scale_colour_brewer(type="qual", palette="Set1") +
   ggtitle("Different ordination methods for 16S data (Bray-Curtis)")
-
-
-
-filt.rar=data.frame(otu_table(subsetMG))
-
-dist_bc <- as.matrix(vegdist(filt.rar, method = "bray")) 
-
-dist_bc[1:5, 1:5]
-#sample_data(subsetMG)$Age = as.factor(sample_data(subsetMG)$Age)
-
 
 # PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
 
@@ -80,84 +72,226 @@ plot_ordination(subsetMG, pcoa_jaccard, color = "Age", shape = "AB", label = "Fa
   geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
 
 
-plot_scree(pcoa_bc) #scree plots can be made for any of the PCoAs
+plot_scree(pcoa_jsd) #scree plots can be made for any of the PCoAs
+
+# for changing specific labels etc
+
+plot_ordination(subsetMG, pcoa_jaccard, color = "Age", shape = "AB", label = "FarmRoundStable") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
+
+# different way of plotting with scater and tses, this specifically is NMDS BC
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse <- transformCounts(tse, method = "relabundance")
+tse <- runNMDS(tse, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
+                exprs_values = "relabundance",
+                keep_dist = TRUE)
+
+plotReducedDim(tse, "BC", colour_by = "Age")
+
+# PERMANOVAs
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
+tse <- transformCounts(tse, method = "relabundance")
+
+adonis2(t(assay(tse, "relabundance")) ~ AB, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Cox, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Researcher, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ FeedProducent, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ LitterType, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ FeedType, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Gender, data = colData(tse), permutations = 9999) # NIET significant
+adonis2(t(assay(tse, "relabundance")) ~ FarmRoundStable, data = colData(tse), permutations = 9999) 
+adonis2(t(assay(tse, "relabundance")) ~ FlockSize, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ AgeParentStock, data = colData(tse), permutations = 9999)
+
+# basically, composition seems to be different over every single variable, except for gender
+
+# on genus level
+tse_genus <- agglomerateByRank(tse, "Genus")
+tse_genus <- transformCounts(tse_genus, method = "relabundance")
+
+adonis2(t(assay(tse, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999)
+
+adonis2(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999) 
+adonis2(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Researcher, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FeedProducent, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ LitterType, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FeedType, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Gender, data = colData(tse_genus), permutations = 9999) # NIET significant
+adonis2(t(assay(tse_genus, "relabundance")) ~ FarmRoundStable, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FlockSize, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Farm2, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ AgeParentStock, data = colData(tse_genus), permutations = 9999)
+
+# same results on genus level (and on phylum level, though p values become higher)
+
+# for unifrac and wunifrac
+ps1.rel <- microbiome::transform(subsetMG, "compositional")
+otu <- abundances(ps1.rel)
+meta <- meta(ps1.rel)
+
+adonis2(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+
+adonis2(bray.dist ~ Age, data = metadf)
+
+permanova = adonis(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+permanova$aov.tab
+
+unifrac.dist <- UniFrac(ps1.rel)
+
+adonis2(unifrac.dist ~ Age, data = metadf)
+adonis2(unifrac.dist ~ AB, data = metadf)
+adonis2(unifrac.dist ~ Farm2, data = metadf)
+adonis2(unifrac.dist ~ Cox, data = metadf)
+adonis2(unifrac.dist ~ Researcher, data = metadf)
+adonis2(unifrac.dist ~ LitterType, data = metadf)
+adonis2(unifrac.dist ~ Gender, data = metadf)
+adonis2(unifrac.dist ~ FarmRoundStable, data = metadf)
 
 
-unwt.unifrac <- plot_ordination(subsetMG, 
-                                ordu.unwt.uni, color="Farm2") 
-unwt.unifrac <- unwt.unifrac + ggtitle("Unweighted UniFrac") + geom_point(size = 2)
-unwt.unifrac <- unwt.unifrac + theme_classic() + scale_color_brewer("Farm2", palette = "Set2")
-unwt.unifrac
-ps1.rel <- microbiome::transform(subsetMG2, "compositional")
-ordu.wt.uni <- ordinate(ps1.rel , "PCoA", "unifrac", weighted=T)
-wt.unifrac <- plot_ordination(ps1.rel, 
-                              ordu.wt.uni, color="AB") 
-wt.unifrac <- wt.unifrac + ggtitle("Weighted UniFrac") + geom_point(size = 2)
-wt.unifrac <- wt.unifrac + theme_classic() + scale_color_brewer("AB", palette = "Set2")
-print(wt.unifrac)
+# same patterns arise
+
+wunifrac.dist <- UniFrac(ps1.rel, 
+                         weighted = TRUE)
+
+adonis2(wunifrac.dist ~ Age, data = metadf)
+adonis2(wunifrac.dist ~ AB, data = metadf) # NOT significant
+adonis2(wunifrac.dist ~ Farm2, data = metadf)
+adonis2(wunifrac.dist ~ Cox, data = metadf)
+adonis2(wunifrac.dist ~ Researcher, data = metadf)
+adonis2(wunifrac.dist ~ LitterType, data = metadf)
+adonis2(wunifrac.dist ~ Gender, data = metadf)
+adonis2(wunifrac.dist ~ FarmRoundStable, data = metadf)
+
+
+#  wunifrac also sees no significant difference between AB and non AB!
+
+jsd.dist <- distance(ps1.rel, "jsd")
+
+adonis2(jsd.dist ~ Age, data = metadf)
+adonis2(jsd.dist ~ AB, data = metadf) # NOT significant
+adonis2(jsd.dist ~ Farm2, data = metadf)
+adonis2(jsd.dist ~ Cox, data = metadf)
+adonis2(jsd.dist ~ Researcher, data = metadf)
+adonis2(jsd.dist ~ LitterType, data = metadf)
+adonis2(jsd.dist ~ Gender, data = metadf)
+adonis2(jsd.dist ~ FarmRoundStable, data = metadf)
+
+# same is true for JSD
+
+bray.dist <- distance(ps1.rel, "bray")
+bray.dist <- distance(subsetMG, "bray")
+
+
+adonis2(bray.dist ~ Age, data = metadf)
+adonis2(bray.dist ~ AB, data = metadf, permutations = 9999) # NOT significant
+adonis2(bray.dist ~ Farm2, data = metadf)
+adonis2(bray.dist ~ Cox, data = metadf)
+adonis2(bray.dist ~ Researcher, data = metadf)
+adonis2(bray.dist ~ LitterType, data = metadf)
+adonis2(bray.dist ~ Gender, data = metadf)
+adonis2(bray.dist ~ FarmRoundStable, data = metadf)
+
+# and BC
+
+jaccard.dist <- distance(ps1.rel, "jaccard")
+
+adonis2(jaccard.dist ~ Age, data = metadf)
+adonis2(jaccard.dist ~ AB, data = metadf) # NOT significant
+adonis2(jaccard.dist ~ Farm2, data = metadf)
+adonis2(jaccard.dist ~ Cox, data = metadf)
+adonis2(jaccard.dist ~ Researcher, data = metadf)
+adonis2(jaccard.dist ~ LitterType, data = metadf)
+adonis2(jaccard.dist ~ Gender, data = metadf)
+adonis2(jaccard.dist ~ FarmRoundStable, data = metadf)
+
+# as well as jaccard..
+
+
+adonis2(dist(otu_table(subsetMG), method='euclidean') ~ Age, 
+       data=metadf)
 
 
 
 metadf <- data.frame(sample_data(ps1.rel))
 
-unifrac.dist <- UniFrac(ps1.rel, 
-                        weighted = TRUE, 
-                        normalized = TRUE,  
-                        parallel = FALSE, 
-                        fast = TRUE)
-
-tse2 = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
-tse2 <- relAbundanceCounts(tse2)
-
-tse2 <- transformCounts(tse2, method = "relabundance")
-tse2 <- runNMDS(tse2, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
-                exprs_values = "relabundance",
-                keep_dist = TRUE)
-
-plotReducedDim(tse2, "BC", colour_by = "Age")
-
-
-permanova_age <- adonis2(unifrac.dist ~ Age, data = metadf)
-permanova_AB <- adonis2(unifrac.dist ~ AB, data = metadf)
-permanova_farm <- adonis2(unifrac.dist ~ Farm2, data = metadf)
-permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
-permanova_researcher <- adonis2(unifrac.dist ~ Researcher, data = metadf)
-permanova_LitterType <- adonis2(unifrac.dist ~ LitterType, data = metadf)
-permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
 
 
 ps.disper <- betadisper(unifrac.dist, metadf$Age)
 permutest(ps.disper, pairwise = TRUE)
 
 
+
+
+
+# SIMPER analyses
+
+# We will automate simper with pre-existing scripts, sadly we cannot include all comparisons at once for it will cause the scripts to break
+
 source("../Results/Scripts/Steinberger_scripts/simper_pretty.r")
 source("../Results/Scripts/Steinberger_scripts/R_krusk.r")
 
-simper.pretty(otu_table(subsetMG), metrics = sample_data(Rps), interesting = c("Age", "AB", "Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "16S")
+#Age 
 
-simper.results = data.frame(read.csv("16s_clean_simper.csv"))
+simper.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), interesting = c("Age"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MG_age")
+
+MG_age =  data.frame(read.csv("MG_age_clean_simper.csv"))
+
+kruskal.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), csv = MG_age, interesting = c('Age'), output_name =  'MG_age')
+
+KW_MG_age = data.frame(read.csv("MG_Age_krusk_simper.csv"))
+KW_MG_age = KW_MG_age[KW_MG_age$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MG_age = KW_MG_age[with(KW_MG_age, order(SIMPER, decreasing = TRUE)),]
+head(KW_MG_age)
+
+KW_MG_age %>% dplyr::select("SIMPER", "OTU", "fdr_krusk_p.val") %>%
+  rowwise() %>% mutate(Combined = paste("ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
+
+#AB
+simper.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), interesting = c("AB"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MG_AB")
+
+MG_AB =  data.frame(read.csv("MG_AB_clean_simper.csv"))
+
+kruskal.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), csv = MG_AB, interesting = c('AB'), output_name =  'MG_AB')
+
+KW_MG_AB = data.frame(read.csv("MG_AB_krusk_simper.csv"))
+KW_MG_AB = KW_MG_AB[KW_MG_AB$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MG_AB = KW_MG_AB[with(KW_MG_AB, order(SIMPER, decreasing = TRUE)),]
+head(KW_MG_AB)
+
+KW_MG_AB %>% dplyr::select("SIMPER", "OTU", "fdr_krusk_p.val") %>% #round_df(3) %>%
+  rowwise() %>% mutate(Combined = paste("ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
 
 
-simper.results = data.frame(read.csv("Rps_clean_simper_16s.csv"))
 
-kruskal.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), csv = simper.results, interesting = c('Age'), output_name =  'Age')
+format.pval(KW_MG_AB$fdr_krusk_p.val, digits = 4) # rounding p-values to proper digits should be done
 
-kruskal.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), csv = simper.results, interesting = c('AB'), output_name =  'AB')
+#Farms
+
+simper.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), interesting = c("Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MG_Farm")
+
+MG_Farm =  data.frame(read.csv("MG_Farm_clean_simper.csv"))
+
+kruskal.pretty(otu_table(subsetMG), metrics = sample_data(subsetMG), csv = MG_Farm, interesting = c('Farm2'), output_name =  'MG_Farm')
+
+KW_MG_Farm = data.frame(read.csv("MG_Farm_krusk_simper.csv"))
+KW_MG_Farm = KW_MG_Farm[KW_MG_Farm$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MG_Farm = KW_MG_Farm[with(KW_MG_Farm, order(SIMPER, decreasing = TRUE)),]
+head(KW_MG_Farm)
+
+KW_MG_Farm %>% dplyr::select("Comparison", "SIMPER", "OTU", "fdr_krusk_p.val") %>%
+  rowwise() %>% mutate(Combined = paste(Comparison, "ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
+
+abund = otu_table(subsetMG)/rowSums(otu_table(subsetMG))*100
 
 
-class(sample_data(subsetMG))
-
-KW.results = data.frame(read.csv("Age_krusk_simper.csv"))
-
-KW.results = KW.results[KW.results$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
-
-KW.results = KW.results[with(KW.results, order(OTU)),]
-head(KW.results)
-
-abund = otu_table(Rps)/rowSums(otu_table(Rps))*100
-
-
-boxplot(unlist(data.frame(abund["tet(O/32/O)_5_FP929050"])) ~ sample_data(Rps)$Age, ylab="% Relative abundance", main="OTU1")
+boxplot(unlist(data.frame(abund["1624"])) ~ sample_data(subsetMG)$Age, ylab="% Relative abundance", main="OTU1")
 
 
 for (otu in KW.results$OTU) {

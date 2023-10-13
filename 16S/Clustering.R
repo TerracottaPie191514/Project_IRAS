@@ -17,7 +17,7 @@ library(simpr)
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microbiome.github.io/OMA/viz-chapter.html 
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -47,7 +47,7 @@ pam.out <- clusterCells(tse,
 
 pam.out
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -74,7 +74,7 @@ res_bray$Best.nc
 
 # Trying out different methods for finding optimal number of clusters:
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 
 tse <- transformCounts(tse, method = "relabundance")
 
@@ -109,7 +109,7 @@ plotReducedDim(tse, "MDS", colour_by = "Farm2")
 
 
   
-tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 tse <- agglomerateByRank(tse, rank = "Genus", agglomerateTree = TRUE)
 tse_dmn <- mia::runDMN(tse, name = "DMN", k = 1:7)
 tse_dmn
@@ -166,7 +166,7 @@ euclidean_dmm_plot <- ggplot(
 
 euclidean_dmm_plot
 
-tse = makeTreeSummarizedExperimentFromPhyloseq(subset_mg)
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 tse <- transformCounts(tse, method = "rclr")
 tse <- runUMAP(tse, name = "UMAP", assay.type = "rclr")
 k <- c(2, 3, 5, 10)

@@ -16,7 +16,7 @@ vegan::rarecurve(otu_tab,
 
 # we can add lines to show sampling depths
 rarecurve(otu_tab, step=500, ylab = "ARGs", label = FALSE)
-abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
+  abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
 
 
 # virtually no samples are reaching a plateau so sequencing depth is not appropriate, undersampling for most of the dataset
@@ -80,11 +80,36 @@ colnames(ps0.rar@tax_table) = c("Phylum", "Order", "Class","Family")
 plot_taxa_prevalence(ps0.rar, "Phylum")
 pscopy = Rps
 colnames(pscopy@tax_table) = c("Phylum", "Order", "Class","Family")
-plot_taxa_prevalence(pscopy, "Phylum") # Sadly we can see entire phyla disappear, as well as many individual values, rarefaction is deemed not appropriate either way
+plot_taxa_prevalence(pscopy, "Phylum") # Sadly we can see entire phyla disappear, as well as many individual values, this rarefaction is deemed not appropriate either way
 ps_tpmcopy = Rps_tpm
 colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
 plot_taxa_prevalence(ps_tpmcopy, "Phylum") # TPM data
 
+
+# We will be using a different type of rarefaction
+
+seed=1337
+set.seed(seed)
+
+ssum <- sample_sums(Rps)
+ssum
+ssum2 <- round(ssum/5000,0)
+ssum2
+
+nsamples <- length(sample_names(Rps)) # amount of samples
+
+#first do 1st sample then build around it the rest
+i=1
+m.tmp <- subset_samples( Rps, sample_names(Rps) == sample_names(Rps)[i] )
+m.tmp <- rarefy_even_depth( m.tmp, sample.size=ssum2[i], trimOTUs=FALSE, rngseed=seed )
+
+Rps_rar <- m.tmp
+
+for( i in 2:nsamples) {
+  m.tmp <- subset_samples( Rps, sample_names(Rps) == sample_names(Rps)[i] )
+  m.tmp <- rarefy_even_depth( m.tmp, sample.size=ssum2[i], trimOTUs=FALSE, rngseed=seed )
+  Rps_rar <- merge_phyloseq(Rps_rar, m.tmp)
+}
 
 # srs_p() gebruiken (QsRutils)
 

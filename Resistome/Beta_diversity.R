@@ -55,27 +55,27 @@ plot_pcoa_ordination <- function(data, pcoa, var, title) {
   return(p)
 }
 
-pcoa_bc = ordinate(subset16S, "PCoA", "bray") 
-pcoa_unifrac = ordinate(subset16S, "PCoA", "unifrac") 
-pcoa_wunifrac = ordinate(subset16S, "PCoA", "wunifrac") 
-pcoa_jsd = ordinate(subset16S, "PCoA", "jsd") 
-pcoa_jaccard = ordinate(subset16S, "PCoA", "jaccard", binary=TRUE) 
+pcoa_bc = ordinate(Rps, "PCoA", "bray") 
+pcoa_unifrac = ordinate(Rps, "PCoA", "unifrac") 
+pcoa_wunifrac = ordinate(Rps, "PCoA", "wunifrac") 
+pcoa_jsd = ordinate(Rps, "PCoA", "jsd") 
+pcoa_jaccard = ordinate(Rps, "PCoA", "jaccard", binary=TRUE) 
 
 
-plot_pcoa_ordination(subset16S, pcoa_bc, "Age", "PCoA Bray Curtis")
-plot_pcoa_ordination(subset16S, pcoa_bc, "Farm2", "PCoA Bray Curtis")
+plot_pcoa_ordination(Rps, pcoa_bc, "Age", "PCoA Bray Curtis")
+plot_pcoa_ordination(Rps, pcoa_bc, "Farm2", "PCoA Bray Curtis")
 
-plot_pcoa_ordination(subset16S, pcoa_unifrac, "Age", "PCoA Unifrac")
-plot_pcoa_ordination(subset16S, pcoa_unifrac, "Farm2", "PCoA Unifrac")
+plot_pcoa_ordination(Rps, pcoa_unifrac, "Age", "PCoA Unifrac")
+plot_pcoa_ordination(Rps, pcoa_unifrac, "Farm2", "PCoA Unifrac")
 
-plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Age", "PCoA Weighted Unifrac")
-plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Farm2", "PCoA Weighted Unifrac")
+plot_pcoa_ordination(Rps, pcoa_wunifrac, "Age", "PCoA Weighted Unifrac")
+plot_pcoa_ordination(Rps, pcoa_wunifrac, "Farm2", "PCoA Weighted Unifrac")
 
-plot_pcoa_ordination(subset16S, pcoa_jsd, "Age", "PCoA Jensen-Shannon Divergence")
-plot_pcoa_ordination(subset16S, pcoa_jsd, "Farm2", "PCoA Jensen-Shannon Divergence")
+plot_pcoa_ordination(Rps, pcoa_jsd, "Age", "PCoA Jensen-Shannon Divergence")
+plot_pcoa_ordination(Rps, pcoa_jsd, "Farm2", "PCoA Jensen-Shannon Divergence")
 
-plot_pcoa_ordination(subset16S, pcoa_jaccard, "Age", "PCoA Jaccard")
-plot_pcoa_ordination(subset16S, pcoa_jaccard, "Farm2", "PCoA Jaccard")
+plot_pcoa_ordination(Rps, pcoa_jaccard, "Age", "PCoA Jaccard")
+plot_pcoa_ordination(Rps, pcoa_jaccard, "Farm2", "PCoA Jaccard")
 
 
 #plot_ordination(Rps, pcoa_bc, type = "taxa", color = "AMR_class_primary") + 
@@ -90,9 +90,13 @@ pcoa_unifrac = ordinate(Rps, "PCoA", "unifrac")
 
 # plot to look at concentration with a red/green gradient
 
-plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", label = "FarmRoundStable") + 
+plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", label = "firm_id") + 
   geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "Conc...ng..µl.", shape = "Antibiotics used") +
   scale_colour_gradient(low = "red", high = "green")
+
+View(Rps@sam_data)
+
+sample_data(Rps)['firm_id'] <- row.names(sample_data(Rps)) 
 
 
 plot_scree(pcoa_jsd) #scree plots can be made for any of the PCoAs
