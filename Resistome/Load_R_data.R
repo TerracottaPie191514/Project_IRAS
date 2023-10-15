@@ -39,6 +39,8 @@ meta_data_R = dplyr::right_join(firm_names, meta_data, by="SampleID")
 # using Sample_Unique as rownames so we can match the two sets in phyloseq
 meta_data_R %<>% remove_rownames %>% column_to_rownames(var="Sample_Unique")
 
+meta_data_R
+
 # creating tree and making phyloseq components, adding tree and sample data components to phyloseq
 random_tree = rtree(ntaxa(Rps), rooted=TRUE, tip.label=taxa_names(Rps))
 meta_data_R = sample_data(meta_data_R)
@@ -106,5 +108,6 @@ sample_data(Rps_tpm)$AgeParentStock = as.factor(sample_data(Rps_tpm)$AgeParentSt
 sample_data(Rps_tpm)$Age = as.factor(sample_data(Rps_tpm)$Age)
 sample_data(Rps_tpm)$LibraryNumber = as.factor(sample_data(Rps_tpm)$LibraryNumber)
 
+                       
 # declutter R environment by removing objects that no longer serve a purpose
 rm(meta_data, firm_names, random_tree, random_tree2, random_tree3) 

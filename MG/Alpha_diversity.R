@@ -93,11 +93,12 @@ ggboxplot(div_df_melt, x = "Agent", y = "value",
           facet.by = "variable",
           scales = "free",
           xlab = "Antimicrobial agent",
-          title = "Alpha diversity metrics by microbial agent") + 
+          title = "Alpha diversity metrics by microbial agent",
+          outlier.shape = NA) + 
   rremove("x.text") + stat_compare_means(
     comparisons = L.pairs,
     label = "p.signif"
-  )
+  ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
@@ -114,13 +115,13 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Antimicrobial agent",
           legend = "right",
-          title = "Phylogenetic diversity by microbial agent"
-) + rotate_x_text() + 
+          title = "Phylogenetic diversity by microbial agent",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means(
     comparisons = L.pairs,
     label = "p.signif"
-  )
+  ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 
@@ -138,8 +139,9 @@ ggboxplot(div_df_melt, x = "Age", y = "value",
           legend= "right",
           facet.by = "variable",
           scales = "free",
-          title = "Alpha diversity metrics by age") + 
-  rremove("x.text") + stat_compare_means()
+          title = "Alpha diversity metrics by age",
+          outlier.shape = NA) + 
+  rremove("x.text") + stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -150,10 +152,10 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Age",
           legend = "right",
-          title = "Phylogenetic diversity by age"
-) + rotate_x_text() + 
+          title = "Phylogenetic diversity by age",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
-  stat_compare_means(paired = TRUE)
+  stat_compare_means(paired = TRUE) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 # farms / company
@@ -174,10 +176,12 @@ ggboxplot(div_df_melt, x = "Farm", y = "value",
           facet.by = "variable",
           scales = "free",
           order = lev,
-          title = "Alpha diversity metrics by farm") + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "t.test",
-                                                                                                                comparisons = L.pairs,
-                                                                                                                label = "p.signif"
-          )
+          title = "Alpha diversity metrics by farm",
+          outlier.shape = NA) + rotate_x_text() + rremove("x.text") + 
+  stat_compare_means(method = "t.test",
+                            comparisons = L.pairs,
+                            label = "p.signif"
+          ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -188,13 +192,13 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Farm",
           legend = "right",
-          title = "Phylogenetic diversity by farm"
-) + rotate_x_text() + 
+          title = "Phylogenetic diversity by farm",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12),  axis.title.x = element_blank()) +
   stat_compare_means(
     comparisons = L.pairs,
     label = "p.signif"
-  )
+  ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 # based on AB
@@ -212,8 +216,9 @@ ggboxplot(div_df_melt, x = "AB", y = "value",
           facet.by = "variable",
           scales = "free",
           xlab = "Antibiotics used",
-          title = "Alpha diversity metrics by antibiotic usage") + 
-  rremove("x.text") + stat_compare_means()
+          title = "Alpha diversity metrics by antibiotic usage",
+          outlier.shape = NA) + 
+  rremove("x.text") + stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -224,10 +229,10 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Antibiotics used",
           legend = "right",
-          title = "Phylogenetic diversity by antibiotic usage"
-) + rotate_x_text() + 
+          title = "Phylogenetic diversity by antibiotic usage",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
-  stat_compare_means()
+  stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
 ## Looking at significance
 

@@ -9,7 +9,7 @@ library(nlme) # for usage of llply(), to apply functions over lists
 
 # Visualizing different kinds of ordination methods with BC distance matrix
 #currently struggling to implement DPCoA for some reason, plot_ordination gives an error with DPCoA ordination
-plot_ordination(Rps_tpm,  ordinate(Rps, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
+plot_ordination(Rps_mp,  ordinate(Rps, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
 
 estimate_richness(Rps)
 

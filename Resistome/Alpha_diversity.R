@@ -7,6 +7,8 @@ library(QsRutils) # For the goods() function, to estimate coverage
 
 otu_tab <- t(abundances(Rps)) # can use veganotu() function for this
 otu_tab2 <- t(abundances(Rps_tpm))
+otu_tab3 <- t(abundances(Rps_mp))
+
 
 # rarefaction curve
 vegan::rarecurve(otu_tab,
@@ -15,8 +17,11 @@ vegan::rarecurve(otu_tab,
                                    col = "blue", cex = 0.6))
 
 # we can add lines to show sampling depths
-rarecurve(otu_tab, step=500, ylab = "ARGs", label = FALSE)
-  abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
+rarecurve(otu_tab, step=50, ylab = "ARGs")
+abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
+  
+rarecurve(otu_tab3, step=500000, ylab = "ARGs", label = FALSE)
+abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
 
 
 # virtually no samples are reaching a plateau so sequencing depth is not appropriate, undersampling for most of the dataset
@@ -31,7 +36,7 @@ vegan::rarecurve(otu_tab2,
 
 # we use Good's coverage test to see the amount of singletons in the samples
 
-summary(goods(otu_tab)) # on average, 0.65% of the reads in the samples are singletons 
+summary(goods(otu_tab3)) # on average, 0.65% of the reads in the samples are singletons 
 
 summary(goods(otu_tab2)) # there are no singletons in tpm
 
@@ -71,6 +76,16 @@ ps0.rar <- rarefy_even_depth(Rps, sample.size = 118) # we do not want to lose sa
 
 ps0.rar <- srs_p(Rps) # we do not want to lose samples so lowest sample size is maintained, 492! OTUs are removed
 
+# In the rarefaction curves, we can clearly see three outliers, with very large sample sizes and ARGs
+
+# remove problematic samples
+sample_data(Rps)$Sample_Unique = sample_names(Rps)
+sample_variables(Rps)
+Rps %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
+
+sample_data(Rps_mp)$Sample_Unique = sample_names(Rps_mp)
+sample_variables(Rps_mp)
+Rps_mp %<>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
 
 # function not advisable generally > ?rarefy_even_depth()
 
@@ -111,7 +126,6 @@ for( i in 2:nsamples) {
   Rps_rar <- merge_phyloseq(Rps_rar, m.tmp)
 }
 
-# srs_p() gebruiken (QsRutils)
 
 # specific variables ( niet wat er bedoeld werd, voor boxplots doen dit)
 
@@ -171,12 +185,13 @@ ggboxplot(div_df_melt, x = "Agent", y = "value",
                legend= "right",
                facet.by = "variable",
                scales = "free",
-               title = "FPKM Alpha diversity metrics by microbial agent") + 
+               title = "FPKM Alpha diversity metrics by microbial agent",
+          outlier.shape = NA) + 
   rremove("x.text") + stat_compare_means(
     comparisons = L.pairs,
     method = "wilcox.test",
     label = "p.signif"
-    )
+    ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 df.pd <- pd(t(as.data.frame(Rps@otu_table)), Rps@phy_tree,include.root=T) # transposing for use in picante
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
@@ -194,8 +209,8 @@ ggboxplot(hmp.meta,
                      ylab = "Phylogenetic Diversity",
                      xlab = "Antimicrobial agent",
                      legend = "right",
-                     title = "FPKM phylogenetic diversity by microbial agent"
-) + rotate_x_text() + 
+                     title = "FPKM phylogenetic diversity by microbial agent",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
 stat_compare_means(
   comparisons = L.pairs,
@@ -204,7 +219,7 @@ stat_compare_means(
     cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
     symbols = c("****", "***", "**", "*", "n.s")
   )
-)
+) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 # age / days
@@ -221,9 +236,10 @@ ggboxplot(div_df_melt, x = "Age", y = "value",
           legend= "right",
           facet.by = "variable",
           scales = "free",
-          title = "FPKM Alpha diversity metrics by age") + 
+          title = "FPKM Alpha diversity metrics by age",
+          outlier.shape = NA) + 
   rremove("x.text") + stat_compare_means(
-    method = "wilcox.test",)
+    method = "wilcox.test",) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -234,10 +250,10 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Age",
           legend = "right",
-          title = "FPKM phylogenetic diversity by age"
-) + rotate_x_text() + 
+          title = "FPKM phylogenetic diversity by age",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
-  stat_compare_means(method = "wilcox.test", paired = TRUE)
+  stat_compare_means(method = "wilcox.test", paired = TRUE) + geom_jitter(size = 0.7, alpha = 0.9)
     
 
 # farms / company
@@ -258,10 +274,12 @@ ggboxplot(div_df_melt, x = "Farm", y = "value",
           facet.by = "variable",
           scales = "free",
           order = lev,
-          title = "FPKM Alpha diversity metrics by farm") + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "wilcox.test",
-                                                                                                                comparisons = L.pairs,
-                                                                                                                label = "p.signif"
-          )
+          title = "FPKM Alpha diversity metrics by farm",
+          outlier.shape = NA) + rotate_x_text() + rremove("x.text") +
+  stat_compare_means(method = "wilcox.test",
+                        comparisons = L.pairs,
+                        label = "p.signif"
+          ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -273,13 +291,13 @@ ggboxplot(hmp.meta,
           xlab = "Farm",
           legend = "right",
           order = lev,
-          title = "FPKM phylogenetic diversity by farm"
-) + rotate_x_text() + 
+          title = "FPKM phylogenetic diversity by farm",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means(
     comparisons = L.pairs,
     label = "p.signif"
-    )
+    ) + geom_jitter(size = 0.7, alpha = 0.9)
   
 
 # based on AB
@@ -296,9 +314,10 @@ ggboxplot(div_df_melt, x = "AB", y = "value",
           legend= "right",
           facet.by = "variable",
           scales = "free",
-          title = "FPKM Alpha diversity metrics by antibiotic usage") + 
+          title = "FPKM Alpha diversity metrics by antibiotic usage",
+          outlier.shape = NA) + 
   rremove("x.text") + stat_compare_means(
-    method = "wilcox.test")
+    method = "wilcox.test") + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -309,10 +328,10 @@ ggboxplot(hmp.meta,
           ylab = "Phylogenetic Diversity",
           xlab = "Antibiotics used",
           legend = "right",
-          title = "FPKM phylogenetic diversity by antibiotic usage"
-) + rotate_x_text() + 
+          title = "FPKM phylogenetic diversity by antibiotic usage",
+          outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
-  stat_compare_means()
+  stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 

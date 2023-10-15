@@ -27,3 +27,6 @@ total_mapped_reads_kraken2$total_mapped_reads_kraken2
 # 5.F4.S2.CA.8.8.2017 = 9_38  metaphlan: 11619167
 # 2.F4.S2.CA.29.8.2017 = 14_30  metaphlan: 12798500
 # 5.F5.S2.CA.21.9.17 = 10_52  metaphlan: 17231290
+
+# declutter R environment by removing objects that no longer serve a purpose
+rm(subset_kraken2, total_mapped_reads_kraken2, total_mapped_reads_metaphlan, mapped_reads) 
