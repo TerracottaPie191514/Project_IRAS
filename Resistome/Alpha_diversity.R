@@ -79,8 +79,6 @@ ps0.rar <- srs_p(Rps) # we do not want to lose samples so lowest sample size is 
 # In the rarefaction curves, we can clearly see three outliers, with very large sample sizes and ARGs
 
 # remove problematic samples
-sample_data(Rps)$Sample_Unique = sample_names(Rps)
-sample_variables(Rps)
 Rps %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
 
 sample_data(Rps_mp)$Sample_Unique = sample_names(Rps_mp)
