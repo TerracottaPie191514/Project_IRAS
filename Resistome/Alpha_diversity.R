@@ -81,6 +81,8 @@ ps0.rar <- srs_p(Rps) # we do not want to lose samples so lowest sample size is 
 # remove problematic samples
 Rps %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
 
+
+
 sample_data(Rps_mp)$Sample_Unique = sample_names(Rps_mp)
 sample_variables(Rps_mp)
 Rps_mp %<>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 

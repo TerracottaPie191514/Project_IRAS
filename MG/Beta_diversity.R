@@ -72,6 +72,45 @@ plot_ordination(subsetMG, pcoa_jaccard, color = "Age", shape = "AB", label = "Fa
   geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
 
 
+
+# plots for looking at percentage and total amount of bacterial reads mapped
+
+
+# Jaccard
+subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(subsetMG, "PCoA", "jaccard") , color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard percentage",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(subsetMG, "PCoA", "jaccard") , color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard total",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+# BC 
+subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(subsetMG, "PCoA", "bray") , color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC percentage",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(subsetMG, "PCoA", "bray") , color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC total",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+
+pcoa_bc2 = subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
+
+pcoa_bc
+
+subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc2, color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+pcoa_bc3 = subsetMG_mp %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
+
+
+subsetMG %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc3, color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC concentration",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+
 plot_scree(pcoa_jsd) #scree plots can be made for any of the PCoAs
 
 # for changing specific labels etc
@@ -299,9 +338,9 @@ for (otu in KW.results$OTU) {
   
 }
 
-kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+kruskal.test(unlist(data.frame(otu_table(subsetMG)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(subsetMG)$Age)
 
-kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+kruskal.test(unlist(data.frame(otu_table(subsetMG)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(subsetMG)$Age)
 
 
 # declutter R environment by removing objects that no longer serve a purpose

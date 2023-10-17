@@ -31,11 +31,14 @@ rownames(meta_data_MG) = meta_data_MG$Sample_Unique
 # now we'll also add in microbial load
 microbial_load = read.table("bacterial_load_kraken2.tab", sep = "\t", header = TRUE)
 microbial_load$Sample_Unique = sapply(regmatches(microbial_load$Sample_Unique, regexpr("_",microbial_load$Sample_Unique), invert = TRUE), "[[", 2) 
+microbial_load$Sample_Unique[68] = "4_65"
 meta_data_MG = dplyr::right_join(meta_data_MG, microbial_load, by="Sample_Unique")
 
 # creating tree and making phyloseq components, adding tree and sample data components to phyloseq
+set.seed("878") # setting seed for reproducibility purposes
 random_tree = rtree(ntaxa(subsetMG), rooted=TRUE, tip.label=taxa_names(subsetMG))
 meta_data_MG = sample_data(meta_data_MG)
+rownames(meta_data_MG) = meta_data_MG$Sample_Unique
 subsetMG = merge_phyloseq(subsetMG, meta_data_MG, random_tree)
 class(subsetMG)
 

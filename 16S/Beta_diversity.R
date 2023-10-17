@@ -83,6 +83,44 @@ plot_ordination(subset16S, pcoa_jaccard, color = "Age", shape = "AB", label = "F
 plot_scree(pcoa_bc) #scree plots can be made for any of the PCoAs
 
 
+
+# plots for looking at percentage and total amount of bacterial reads mapped
+
+
+# Jaccard
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "jaccard") , color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard percentage",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "jaccard") , color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard total",color = "ReadTot") +
+  scale_colour_viridis_c()
+# BC 
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "bray") , color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC percentage",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "bray") , color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC total",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+
+pcoa_bc2 = Rps %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
+
+pcoa_bc
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc2, color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+pcoa_bc3 = Rps_mp %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
+
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc3, color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC concentration",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+
 unwt.unifrac <- plot_ordination(subset16S, 
                                 ordu.unwt.uni, color="Farm2") 
 unwt.unifrac <- unwt.unifrac + ggtitle("Unweighted UniFrac") + geom_point(size = 2)

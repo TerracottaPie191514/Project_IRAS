@@ -42,11 +42,14 @@ rownames(meta_data_R) = meta_data_R$Sample_Unique
 # now we'll also add in microbial load
 microbial_load = read.table("bacterial_load_kraken2.tab", sep = "\t", header = TRUE)
 microbial_load$Sample_Unique = sapply(regmatches(microbial_load$Sample_Unique, regexpr("_",microbial_load$Sample_Unique), invert = TRUE), "[[", 2) 
+microbial_load$Sample_Unique[68] = "4_65"
 meta_data_R = dplyr::right_join(meta_data_R, microbial_load, by="Sample_Unique")
 
 # creating tree and making phyloseq components, adding tree and sample data components to phyloseq
+set.seed("877") # setting seed for reproducibility purposes
 random_tree = rtree(ntaxa(Rps), rooted=TRUE, tip.label=taxa_names(Rps))
 meta_data_R = sample_data(meta_data_R)
+rownames(meta_data_R) = meta_data_R$Sample_Unique
 Rps = merge_phyloseq(Rps, meta_data_R, random_tree)
 class(Rps)
 
@@ -72,9 +75,8 @@ otu_table(Rps) = otu_table(round(as((otu_table(Rps)), "matrix")), taxa_are_rows(
 otu_table(Rps_mp) = otu_table(round(as((otu_table(Rps_mp)), "matrix")), taxa_are_rows(Rps_mp))
 otu_table(Rps_tpm) = otu_table(round(as((otu_table(Rps_tpm)), "matrix")), taxa_are_rows(Rps_tpm))
 
-#
-sample_data(Rps)$Sample_Unique = sample_names(Rps)
-sample_variables(Rps)
+
+# sample_data(Rps)$Sample_Unique = sample_names(Rps)
 
 
 # overview data

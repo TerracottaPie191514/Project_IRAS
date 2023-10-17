@@ -96,6 +96,44 @@ plot_ordination(Rps, pcoa_jaccard, color = "Conc...ng..µl.", shape = "AB", labe
 
 View(Rps@sam_data)
 
+# plots for looking at percentage and total amount of bacterial reads mapped
+
+
+# Jaccard
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "jaccard") , color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard percentage",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "jaccard") , color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard total",color = "ReadTot") +
+  scale_colour_viridis_c()
+# BC 
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "bray") , color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC percentage",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "bray") , color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC total",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+
+pcoa_bc2 = Rps %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
+
+pcoa_bc
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc2, color = "ReadTot", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "ReadTot") +
+  scale_colour_viridis_c()
+
+pcoa_bc3 = Rps_mp %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
+
+
+Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc3, color = "ReadPerc", label = "Sample_Unique") + 
+  geom_point(size = 3)  + labs(title = "PCoA BC concentration",color = "ReadPerc") +
+  scale_colour_viridis_c()
+
+
+
 sample_data(Rps)['firm_id'] <- row.names(sample_data(Rps)) 
 
 
