@@ -2,7 +2,6 @@
 library(scater) # plotReducedDim
 library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
-library(plyr) # for llply, to apply functions
 library(nlme) # for usage of llply(), to apply functions over lists
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
@@ -153,6 +152,143 @@ tse2 <- runNMDS(tse2, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
                     keep_dist = TRUE)
 
 plotReducedDim(tse2, "BC", colour_by = "Age")
+
+
+# PERMANOVAs
+
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
+tse <- transformCounts(tse, method = "relabundance")
+
+adonis2(t(assay(tse, "relabundance")) ~ AB, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Cox, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Researcher, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ FeedProducent, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ LitterType, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ FeedType, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Gender, data = colData(tse), permutations = 9999) # NIET significant
+adonis2(t(assay(tse, "relabundance")) ~ FarmRoundStable, data = colData(tse), permutations = 9999) 
+adonis2(t(assay(tse, "relabundance")) ~ FlockSize, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ AgeParentStock, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Age, data = colData(tse), permutations = 9999)
+
+# variances: AB: 0.026, Cox: 0.102, Researcher: 0.06, FP : 0.067, LitterType: 0.061, FT :0.055, Gender: 0.007, 
+# Stable: 0.167, FS: 0.1245, Farm 0.103, APS : 0.118, Age: 0.054
+# Order: Stable>FS>APS>Farm>Cox>FP>LT>Researcher>FT>Age>AB>Gender
+
+adonis2(t(assay(tse, "relabundance")) ~ FarmRoundStable * Age, data = colData(tse), permutations = 9999) 
+
+
+# basically, composition seems to be different over every single variable, except for gender
+
+# on genus level
+tse_genus <- agglomerateByRank(tse, "Genus")
+tse_genus <- transformCounts(tse_genus, method = "relabundance")
+
+adonis2(t(assay(tse, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999)
+
+adonis2(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999) 
+adonis2(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Researcher, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FeedProducent, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ LitterType, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FeedType, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Gender, data = colData(tse_genus), permutations = 9999) # NIET significant
+adonis2(t(assay(tse_genus, "relabundance")) ~ FarmRoundStable, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FlockSize, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Farm2, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ AgeParentStock, data = colData(tse_genus), permutations = 9999)
+
+# same results on genus level (and on phylum level, though p values become higher)
+
+# for unifrac and wunifrac
+ps1.rel <- microbiome::transform(subset16S, "compositional")
+otu <- abundances(ps1.rel)
+meta <- meta(ps1.rel)
+
+adonis2(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+
+adonis2(bray.dist ~ Age, data = metadf)
+
+permanova = adonis(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+permanova$aov.tab
+
+unifrac.dist <- UniFrac(ps1.rel)
+
+adonis2(unifrac.dist ~ Age, data = metadf)
+adonis2(unifrac.dist ~ AB, data = metadf)
+adonis2(unifrac.dist ~ Farm2, data = metadf)
+adonis2(unifrac.dist ~ Cox, data = metadf)
+adonis2(unifrac.dist ~ Researcher, data = metadf)
+adonis2(unifrac.dist ~ LitterType, data = metadf)
+adonis2(unifrac.dist ~ Gender, data = metadf)
+adonis2(unifrac.dist ~ FarmRoundStable, data = metadf)
+
+
+# same patterns arise
+
+wunifrac.dist <- UniFrac(ps1.rel, 
+                         weighted = TRUE)
+
+adonis2(wunifrac.dist ~ Age, data = metadf)
+adonis2(wunifrac.dist ~ AB, data = metadf) # NOT significant
+adonis2(wunifrac.dist ~ Farm2, data = metadf)
+adonis2(wunifrac.dist ~ Cox, data = metadf)
+adonis2(wunifrac.dist ~ Researcher, data = metadf)
+adonis2(wunifrac.dist ~ LitterType, data = metadf)
+adonis2(wunifrac.dist ~ Gender, data = metadf)
+adonis2(wunifrac.dist ~ FarmRoundStable, data = metadf)
+
+
+#  wunifrac also sees no significant difference between AB and non AB!
+
+jsd.dist <- distance(ps1.rel, "jsd")
+
+adonis2(jsd.dist ~ Age, data = metadf)
+adonis2(jsd.dist ~ AB, data = metadf) # NOT significant
+adonis2(jsd.dist ~ Farm2, data = metadf)
+adonis2(jsd.dist ~ Cox, data = metadf)
+adonis2(jsd.dist ~ Researcher, data = metadf)
+adonis2(jsd.dist ~ LitterType, data = metadf)
+adonis2(jsd.dist ~ Gender, data = metadf)
+adonis2(jsd.dist ~ FarmRoundStable, data = metadf)
+
+# same is true for JSD
+
+bray.dist <- distance(ps1.rel, "bray")
+bray.dist <- distance(subset16S, "bray")
+
+
+adonis2(bray.dist ~ Age, data = metadf)
+adonis2(bray.dist ~ AB, data = metadf, permutations = 9999) # NOT significant
+adonis2(bray.dist ~ Farm2, data = metadf)
+adonis2(bray.dist ~ Cox, data = metadf)
+adonis2(bray.dist ~ Researcher, data = metadf)
+adonis2(bray.dist ~ LitterType, data = metadf)
+adonis2(bray.dist ~ Gender, data = metadf)
+adonis2(bray.dist ~ FarmRoundStable, data = metadf)
+
+# and BC
+
+jaccard.dist <- distance(ps1.rel, "jaccard")
+
+adonis2(jaccard.dist ~ Age, data = metadf)
+adonis2(jaccard.dist ~ AB, data = metadf) # NOT significant
+adonis2(jaccard.dist ~ Farm2, data = metadf)
+adonis2(jaccard.dist ~ Cox, data = metadf)
+adonis2(jaccard.dist ~ Researcher, data = metadf)
+adonis2(jaccard.dist ~ LitterType, data = metadf)
+adonis2(jaccard.dist ~ Gender, data = metadf)
+adonis2(jaccard.dist ~ FarmRoundStable, data = metadf)
+
+# as well as jaccard..
+
+
+adonis2(dist(otu_table(subset16S), method='euclidean') ~ Age, 
+        data=metadf)
+
+
 
 
 permanova_age <- adonis2(unifrac.dist ~ Age, data = metadf)

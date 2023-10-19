@@ -2,7 +2,6 @@
 library(scater) # plotReducedDim
 library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
-library(plyr) # for llply, to apply functions
 library(nlme) # for usage of llply(), to apply functions over lists
 
 # Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html

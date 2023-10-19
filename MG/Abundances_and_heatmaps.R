@@ -21,8 +21,29 @@ subsetMG %>% aggregate_top_taxa2("Phylum", top = 5) %>% ps_filter(FarmRoundStabl
 ps_prim <- subsetMG %>% aggregate_top_taxa2("Phylum", top = 11) %>% phyloseq::tax_glom("Phylum")
 taxa_names(ps_prim) <- phyloseq::tax_table(ps_prim)[, "Phylum"]
 
-psmelt(ps_prim) %>% 
+psmelt(ps_prim) %>% #AB
   ggplot(aes(x = AB, y = Abundance)) +
+  geom_boxplot(outlier.shape  = NA) +
+  geom_jitter(aes(color = Phylum), height = 0, width = .2) +
+  labs(x = "", y = "Abundance\n") +
+  facet_wrap(~ OTU, scales = "free") 
+
+psmelt(ps_prim) %>% #Age
+  ggplot(aes(x = Age, y = Abundance)) +
+  geom_boxplot(outlier.shape  = NA) +
+  geom_jitter(aes(color = Phylum), height = 0, width = .2) +
+  labs(x = "", y = "Abundance\n") +
+  facet_wrap(~ OTU, scales = "free") 
+
+psmelt(ps_prim) %>% #Farm
+  ggplot(aes(x = Farm2, y = Abundance)) +
+  geom_boxplot(outlier.shape  = NA) +
+  geom_jitter(aes(color = Phylum), height = 0, width = .2) +
+  labs(x = "", y = "Abundance\n") +
+  facet_wrap(~ OTU, scales = "free") 
+
+psmelt(ps_prim) %>% #Stable
+  ggplot(aes(x = Stables, y = Abundance)) +
   geom_boxplot(outlier.shape  = NA) +
   geom_jitter(aes(color = Phylum), height = 0, width = .2) +
   labs(x = "", y = "Abundance\n") +

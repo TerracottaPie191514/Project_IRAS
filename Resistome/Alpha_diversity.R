@@ -127,30 +127,6 @@ for( i in 2:nsamples) {
 }
 
 
-# specific variables ( niet wat er bedoeld werd, voor boxplots doen dit)
-
-# non-AB
-pscopy %>% ps_filter(AB == "no") %>% plot_taxa_prevalence("Phylum") + ggtitle("no")
-# AB
-pscopy %>% ps_filter(AB == "yes") %>% plot_taxa_prevalence("Phylum") + ggtitle("yes")
-
-# age 14
-pscopy %>% ps_filter(Age == "14") %>% plot_taxa_prevalence("Phylum") + ggtitle("14")
-# age 35
-pscopy %>% ps_filter(Age == "35") %>% plot_taxa_prevalence("Phylum") + ggtitle("35")
-
-# farm1
-pscopy %>% ps_filter(Farm2 == "Farm1") %>% plot_taxa_prevalence("Phylum") + ggtitle("farm1")
-# farm2
-pscopy %>% ps_filter(Farm2 == "Farm2") %>% plot_taxa_prevalence("Phylum") + ggtitle("farm2")
-# farm3
-pscopy %>% ps_filter(Farm2 == "Farm3") %>% plot_taxa_prevalence("Phylum") + ggtitle("farm3")
-# farm4
-pscopy %>% ps_filter(Farm2 == "Farm4") %>% plot_taxa_prevalence("Phylum") + ggtitle("farm4")
-
-
-
-
 # calculating alpha diversity measures
 
 hmp.div <- microbiome::alpha(Rps, index = "all") # use ps0.rar if rarefied
