@@ -8,15 +8,15 @@ library(QsRutils) # For the goods() function, to estimate coverage
 # used the following guide: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/alpha-diversities.html
 
 otu_tab <- t(abundances(subsetMG))
-# rarefaction curve
+# rarefaction curve - takes a long time
 vegan::rarecurve(otu_tab,
-                 step = 50, label = FALSE,
+                 step = 5000, label = FALSE,
                  sample = min(rowSums(otu_tab),
                               col = "blue", cex = 0.6))
 
 
 # we can add lines to show sampling depths
-rarecurve(otu_tab, step=500)
+rarecurve(otu_tab, step=5000)
 abline(v=sample_sums(subsetMG), lty='dotted', lwd=0.5)
 
 # we do see that many samples do not plateau
@@ -72,11 +72,6 @@ colnames(div.df)
 
 
 #based on microbial agent
-# Shortening names
-div.df$Cox[div.df$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
-div.df$Cox[div.df$Cox == "narasin(monteban)"] = "Monteban"
-div.df$Cox[div.df$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
-
 div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
 colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
 
@@ -101,11 +96,6 @@ ggboxplot(div_df_melt, x = "Agent", y = "value",
   ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
-
-# Shortening names
-hmp.meta$Cox[hmp.meta$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
-hmp.meta$Cox[hmp.meta$Cox == "narasin(monteban)"] = "Monteban"
-hmp.meta$Cox[hmp.meta$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 ggboxplot(hmp.meta,
           x = "Cox",
@@ -191,6 +181,7 @@ ggboxplot(hmp.meta,
           palette = "lancet",
           ylab = "Phylogenetic Diversity",
           xlab = "Farm",
+          order = lev,
           legend = "right",
           title = "Phylogenetic diversity by farm",
           outlier.shape = NA) + rotate_x_text() + 

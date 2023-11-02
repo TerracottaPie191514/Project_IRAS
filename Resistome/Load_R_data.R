@@ -123,20 +123,27 @@ sample_data(Rps)$FarmRoundStable = as.factor(sample_data(Rps)$FarmRoundStable)
 Rps@sam_data$Stable = revalue(sample_data(Rps)$FarmRoundStable, c("Farm1R1S1"="Stable1", "Farm1R1S2"="Stable2", "Farm2R1S1"="Stable3", "Farm2R1S2"="Stable4",
                                                                               "Farm2R2S1"="Stable5", "Farm2R2S2"="Stable6", "Farm3R1S1"="Stable7", "Farm3R1S2"="Stable8",
                                                                               "Farm4R1S1"="Stable9", "Farm4R1S2"="Stable10"))
-Rps@sam_data$Stable
+# Shortening agent names
+Rps@sam_data$Cox[Rps@sam_data$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+Rps@sam_data$Cox[Rps@sam_data$Cox == "narasin(monteban)"] = "Monteban"
+Rps@sam_data$Cox[Rps@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 # repeat
 sample_data(Rps_mp)$FarmRoundStable = as.factor(sample_data(Rps_mp)$FarmRoundStable)
 Rps_mp@sam_data$Stable = revalue(sample_data(Rps_mp)$FarmRoundStable, c("Farm1R1S1"="Stable1", "Farm1R1S2"="Stable2", "Farm2R1S1"="Stable3", "Farm2R1S2"="Stable4",
                                                                               "Farm2R2S1"="Stable5", "Farm2R2S2"="Stable6", "Farm3R1S1"="Stable7", "Farm3R1S2"="Stable8",
                                                                               "Farm4R1S1"="Stable9", "Farm4R1S2"="Stable10"))
-Rps_mp@sam_data$Stable
+Rps_mp@sam_data$Cox[Rps_mp@sam_data$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+Rps_mp@sam_data$Cox[Rps_mp@sam_data$Cox == "narasin(monteban)"] = "Monteban"
+Rps_mp@sam_data$Cox[Rps_mp@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 sample_data(Rps_tpm)$FarmRoundStable = as.factor(sample_data(Rps_tpm)$FarmRoundStable)
 Rps_tpm@sam_data$Stables = revalue(sample_data(Rps_tpm)$FarmRoundStable, c("Farm1R1S1"="Stable1", "Farm1R1S2"="Stable2", "Farm2R1S1"="Stable3", "Farm2R1S2"="Stable4",
                                                                               "Farm2R2S1"="Stable5", "Farm2R2S2"="Stable6", "Farm3R1S1"="Stable7", "Farm3R1S2"="Stable8",
                                                                               "Farm4R1S1"="Stable9", "Farm4R1S2"="Stable10"))
-Rps_tpm@sam_data$Stables
+Rps_tpm@sam_data$Cox[Rps_tpm@sam_data$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+Rps_tpm@sam_data$Cox[Rps_tpm@sam_data$Cox == "narasin(monteban)"] = "Monteban"
+Rps_tpm@sam_data$Cox[Rps_tpm@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
                        
 # declutter R environment by removing objects that no longer serve a purpose
 rm(meta_data, meta_data_R, firm_names, microbial_load, random_tree, random_tree2, random_tree3) 

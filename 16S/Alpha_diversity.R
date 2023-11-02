@@ -72,12 +72,7 @@ colnames(div.df)
 
 
 #based on microbial agent
-# Shortening names
-div.df$Cox[div.df$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
-div.df$Cox[div.df$Cox == "narasin(monteban)"] = "Monteban"
-div.df$Cox[div.df$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
-
-div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_covhttp://127.0.0.1:35143/graphics/plot_zoom_png?width=1504&height=963erage", "evenness_pielou")]
+div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
 colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
 
 
@@ -88,6 +83,7 @@ L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
 
 ggboxplot(div_df_melt, x = "Agent", y = "value",
           fill = "Agent",
+          order = c("Maxiban","Sacox","None","Monteban"),
           palette = "lancet",
           legend= "right",
           facet.by = "variable",
@@ -179,8 +175,8 @@ ggboxplot(div_df_melt, x = "Farm", y = "value",
           order = lev,
           title = "Alpha diversity metrics by farm",
           outlier.shape = NA) + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "wilcox.test",
-            comparisons = L.pairs,
-            label = "p.signif"
+                                                                                         comparisons = L.pairs,
+                                                                                         label = "p.signif"
           ) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
@@ -199,6 +195,41 @@ ggboxplot(hmp.meta,
     comparisons = L.pairs,
     label = "p.signif"
   ) + geom_jitter(size = 0.7, alpha = 0.9)
+
+# stable
+
+div.df2 <- div.df[, c("Stables", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Stable", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
+L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+
+
+ggboxplot(div_df_melt, x = "Stable", y = "value",
+          fill = "Stable",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Alpha diversity metrics by stable",
+          outlier.shape = NA) + rotate_x_text() + rremove("x.text") + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+ggboxplot(hmp.meta,
+          x = "Stables",
+          y = "Phylogenetic_Diversity",
+          fill = "Stables",
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Farm",
+          legend = "right",
+          title = "Phylogenetic diversity by stable",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12),  
+        axis.title.x = element_blank()) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 # based on AB
@@ -317,11 +348,9 @@ wilcox.test(lib.div$diversity_coverage ~ sample_data(subset16S)$AB) # not signif
 
 boxplot(lib.div$diversity_fisher ~ sample_data(subset16S)$AB, ylab="fisher") # the boxplots are quite similar so this is not unexpected
 
-diversity_coverage
-
 # used these functions to get means and sd per variable and alpha diversity metric
-lib.div.ab = lib.div
-lib.div.ab$AB = sample_data(subset16S)$AB
+#lib.div.ab = lib.div
+#lib.div.ab$AB = sample_data(subset16S)$AB
 
 aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=mean) 
 aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=sd) 
@@ -410,6 +439,7 @@ rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(subset16S)$AB + (1
 summary(rm.shannon.all)
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(p1, p2, p3, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.observed.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.observed.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
+rm(p1, p2, p3, p4, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.observed.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.observed.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
 
-rm(aov.shannon.age_farm, aov.shannon.age_AB, aov.shannon.age_all, aov.simpson.farm)
+rm(aov.shannon.age_farm, aov.shannon.age_AB, aov.shannon.age_all, aov.simpson.farm, aov.observed.agent, aov.fisher.agent,
+   rm.shannon.all)

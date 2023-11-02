@@ -1,14 +1,14 @@
-#library(microbiomeDataSets)
 library(scater) # plotReducedDim
-library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
 library(nlme) # for usage of llply(), to apply functions over lists
 
-# Used the following guide : https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html
+# Used the following guides: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html, https://rfunctions.blogspot.com/2019/03/betadisper-and-adonis-homogeneity-of.html
 
-plot_ordination(subset16S,  ordinate(subset16S, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
 
-estimate_richness(subset16S)
+# single ordination method
+#plot_ordination(subset16S,  ordinate(subset16S, method = "DPCoA", distance="bray"), "samples", color="Age", shape="AB")
+
+estimate_richness(subset16S) # no singletons
 
 dist = "bray"
 ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA", "DPCoA")
@@ -31,15 +31,6 @@ ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) +
   scale_fill_brewer(type="qual", palette="Set1") +
   scale_colour_brewer(type="qual", palette="Set1") +
   ggtitle("Different ordination methods for 16S data (Bray-Curtis)")
-
-
-
-filt.rar=data.frame(otu_table(subset16S))
-
-dist_bc <- as.matrix(vegdist(filt.rar, method = "bray")) 
-
-dist_bc[1:5, 1:5]
-#sample_data(subset16S)$Age = as.factor(sample_data(subset16S)$Age)
 
 
 # PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
@@ -75,87 +66,24 @@ plot_pcoa_ordination(subset16S, pcoa_jsd, "Farm2", "PCoA Jensen-Shannon Divergen
 plot_pcoa_ordination(subset16S, pcoa_jaccard, "Age", "PCoA Jaccard")
 plot_pcoa_ordination(subset16S, pcoa_jaccard, "Farm2", "PCoA Jaccard")
 
-plot_ordination(subset16S, pcoa_jaccard, color = "Age", shape = "AB", label = "FarmRoundStable") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
+#plot_ordination(subset16S, pcoa_jaccard, color = "Age", shape = "AB", label = "Stables") +  
+#  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
 
 
-plot_scree(pcoa_bc) #scree plots can be made for any of the PCoAs
+plot_scree(pcoa_bc) #scree plots can be made for any of the PCoAs, those that explain less than 10% of variance on first axis
+plot_scree(pcoa_jaccard)
 
-
-
-# plots for looking at percentage and total amount of bacterial reads mapped
-
-
-# Jaccard
-Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "jaccard") , color = "ReadPerc", label = "Sample_Unique") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jaccard percentage",color = "ReadPerc") +
-  scale_colour_viridis_c()
-
-Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "jaccard") , color = "ReadTot", label = "Sample_Unique") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jaccard total",color = "ReadTot") +
-  scale_colour_viridis_c()
-# BC 
-Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "bray") , color = "ReadPerc", label = "Sample_Unique") + 
-  geom_point(size = 3)  + labs(title = "PCoA BC percentage",color = "ReadPerc") +
-  scale_colour_viridis_c()
-
-Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(ordinate(Rps, "PCoA", "bray") , color = "ReadTot", label = "Sample_Unique") + 
-  geom_point(size = 3)  + labs(title = "PCoA BC total",color = "ReadTot") +
-  scale_colour_viridis_c()
-
-
-pcoa_bc2 = Rps %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
-
-pcoa_bc
-
-Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc2, color = "ReadTot", label = "Sample_Unique") + 
-  geom_point(size = 3)  + labs(title = "PCoA Jaccard concentration",color = "ReadTot") +
-  scale_colour_viridis_c()
-
-pcoa_bc3 = Rps_mp %>% subset_samples(Sample_Unique != "2_57") %>% ordinate("PCoA", "bray") 
-
-
-Rps %>% subset_samples(Sample_Unique != "2_57") %>% plot_ordination(pcoa_bc3, color = "ReadPerc", label = "Sample_Unique") + 
-  geom_point(size = 3)  + labs(title = "PCoA BC concentration",color = "ReadPerc") +
-  scale_colour_viridis_c()
-
-
-unwt.unifrac <- plot_ordination(subset16S, 
-                                ordu.unwt.uni, color="Farm2") 
-unwt.unifrac <- unwt.unifrac + ggtitle("Unweighted UniFrac") + geom_point(size = 2)
-unwt.unifrac <- unwt.unifrac + theme_classic() + scale_color_brewer("Farm2", palette = "Set2")
-unwt.unifrac
-ps1.rel <- microbiome::transform(subset16S2, "compositional")
-ordu.wt.uni <- ordinate(ps1.rel , "PCoA", "unifrac", weighted=T)
-wt.unifrac <- plot_ordination(ps1.rel, 
-                              ordu.wt.uni, color="AB") 
-wt.unifrac <- wt.unifrac + ggtitle("Weighted UniFrac") + geom_point(size = 2)
-wt.unifrac <- wt.unifrac + theme_classic() + scale_color_brewer("AB", palette = "Set2")
-print(wt.unifrac)
-
-
-
-metadf <- data.frame(sample_data(ps1.rel))
-
-unifrac.dist <- UniFrac(ps1.rel, 
-                        weighted = TRUE, 
-                        normalized = TRUE,  
-                        parallel = FALSE, 
-                        fast = TRUE)
+# NMDS
 
 tse2 = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
-tse2 <- relAbundanceCounts(tse2)
+tse2 %<>%  transformCounts( method = "relabundance")
+tse2 %<>% runNMDS(FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
+                  exprs_values = "relabundance",
+                  keep_dist = TRUE)
 
-tse2 <- transformCounts(tse2, method = "relabundance")
-tse2 <- runNMDS(tse2, FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
-                    exprs_values = "relabundance",
-                    keep_dist = TRUE)
-
-plotReducedDim(tse2, "BC", colour_by = "Age")
-
+tse2 %>% plotReducedDim("BC", colour_by = "Age") 
 
 # PERMANOVAs
-
 
 tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 tse <- transformCounts(tse, method = "relabundance")
@@ -167,7 +95,7 @@ adonis2(t(assay(tse, "relabundance")) ~ FeedProducent, data = colData(tse), perm
 adonis2(t(assay(tse, "relabundance")) ~ LitterType, data = colData(tse), permutations = 9999)
 adonis2(t(assay(tse, "relabundance")) ~ FeedType, data = colData(tse), permutations = 9999)
 adonis2(t(assay(tse, "relabundance")) ~ Gender, data = colData(tse), permutations = 9999) # NIET significant
-adonis2(t(assay(tse, "relabundance")) ~ FarmRoundStable, data = colData(tse), permutations = 9999) 
+adonis2(t(assay(tse, "relabundance")) ~ Stables, data = colData(tse), permutations = 9999) 
 adonis2(t(assay(tse, "relabundance")) ~ FlockSize, data = colData(tse), permutations = 9999)
 adonis2(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations = 9999)
 adonis2(t(assay(tse, "relabundance")) ~ AgeParentStock, data = colData(tse), permutations = 9999)
@@ -177,7 +105,8 @@ adonis2(t(assay(tse, "relabundance")) ~ Age, data = colData(tse), permutations =
 # Stable: 0.167, FS: 0.1245, Farm 0.103, APS : 0.118, Age: 0.054
 # Order: Stable>FS>APS>Farm>Cox>FP>LT>Researcher>FT>Age>AB>Gender
 
-adonis2(t(assay(tse, "relabundance")) ~ FarmRoundStable * Age, data = colData(tse), permutations = 9999) 
+# Mixed models
+adonis2(t(assay(tse, "relabundance")) ~ Stables * AB, data = colData(tse), permutations = 9999) 
 
 
 # basically, composition seems to be different over every single variable, except for gender
@@ -186,8 +115,6 @@ adonis2(t(assay(tse, "relabundance")) ~ FarmRoundStable * Age, data = colData(ts
 tse_genus <- agglomerateByRank(tse, "Genus")
 tse_genus <- transformCounts(tse_genus, method = "relabundance")
 
-adonis2(t(assay(tse, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999)
-
 adonis2(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999) 
 adonis2(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
 adonis2(t(assay(tse_genus, "relabundance")) ~ Researcher, data = colData(tse_genus), permutations = 9999)
@@ -195,24 +122,25 @@ adonis2(t(assay(tse_genus, "relabundance")) ~ FeedProducent, data = colData(tse_
 adonis2(t(assay(tse_genus, "relabundance")) ~ LitterType, data = colData(tse_genus), permutations = 9999)
 adonis2(t(assay(tse_genus, "relabundance")) ~ FeedType, data = colData(tse_genus), permutations = 9999)
 adonis2(t(assay(tse_genus, "relabundance")) ~ Gender, data = colData(tse_genus), permutations = 9999) # NIET significant
-adonis2(t(assay(tse_genus, "relabundance")) ~ FarmRoundStable, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Stables, data = colData(tse_genus), permutations = 9999)
 adonis2(t(assay(tse_genus, "relabundance")) ~ FlockSize, data = colData(tse_genus), permutations = 9999)
 adonis2(t(assay(tse_genus, "relabundance")) ~ Farm2, data = colData(tse_genus), permutations = 9999)
 adonis2(t(assay(tse_genus, "relabundance")) ~ AgeParentStock, data = colData(tse_genus), permutations = 9999)
 
-# same results on genus level (and on phylum level, though p values become higher)
+# same trends on genus level (and on phylum level, though p values become higher)
 
-# for unifrac and wunifrac
+
+# for different ordination methods
 ps1.rel <- microbiome::transform(subset16S, "compositional")
-otu <- abundances(ps1.rel)
-meta <- meta(ps1.rel)
+metadf <- data.frame(sample_data(ps1.rel))
 
-adonis2(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+# alternative calculations
+#otu <- abundances(ps1.rel)
+#meta <- meta(ps1.rel)
+#adonis2(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
 
-adonis2(bray.dist ~ Age, data = metadf)
-
-permanova = adonis(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
-permanova$aov.tab
+#permanova = adonis(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+#permanova$aov.tab
 
 unifrac.dist <- UniFrac(ps1.rel)
 
@@ -222,8 +150,8 @@ adonis2(unifrac.dist ~ Farm2, data = metadf)
 adonis2(unifrac.dist ~ Cox, data = metadf)
 adonis2(unifrac.dist ~ Researcher, data = metadf)
 adonis2(unifrac.dist ~ LitterType, data = metadf)
-adonis2(unifrac.dist ~ Gender, data = metadf)
-adonis2(unifrac.dist ~ FarmRoundStable, data = metadf)
+adonis2(unifrac.dist ~ Gender, data = metadf) # not sign
+adonis2(unifrac.dist ~ Stables, data = metadf)
 
 
 # same patterns arise
@@ -232,66 +160,331 @@ wunifrac.dist <- UniFrac(ps1.rel,
                          weighted = TRUE)
 
 adonis2(wunifrac.dist ~ Age, data = metadf)
-adonis2(wunifrac.dist ~ AB, data = metadf) # NOT significant
+adonis2(wunifrac.dist ~ AB, data = metadf) 
 adonis2(wunifrac.dist ~ Farm2, data = metadf)
 adonis2(wunifrac.dist ~ Cox, data = metadf)
 adonis2(wunifrac.dist ~ Researcher, data = metadf)
 adonis2(wunifrac.dist ~ LitterType, data = metadf)
-adonis2(wunifrac.dist ~ Gender, data = metadf)
-adonis2(wunifrac.dist ~ FarmRoundStable, data = metadf)
+adonis2(wunifrac.dist ~ Gender, data = metadf) # not sign
+adonis2(wunifrac.dist ~ Stables, data = metadf)
 
 
-#  wunifrac also sees no significant difference between AB and non AB!
+#  same patterns
 
 jsd.dist <- distance(ps1.rel, "jsd")
 
 adonis2(jsd.dist ~ Age, data = metadf)
-adonis2(jsd.dist ~ AB, data = metadf) # NOT significant
+adonis2(jsd.dist ~ AB, data = metadf) 
 adonis2(jsd.dist ~ Farm2, data = metadf)
 adonis2(jsd.dist ~ Cox, data = metadf)
 adonis2(jsd.dist ~ Researcher, data = metadf)
 adonis2(jsd.dist ~ LitterType, data = metadf)
-adonis2(jsd.dist ~ Gender, data = metadf)
-adonis2(jsd.dist ~ FarmRoundStable, data = metadf)
+adonis2(jsd.dist ~ Gender, data = metadf) # not sign
+adonis2(jsd.dist ~ Stables, data = metadf)
 
 # same is true for JSD
 
 bray.dist <- distance(ps1.rel, "bray")
-bray.dist <- distance(subset16S, "bray")
-
 
 adonis2(bray.dist ~ Age, data = metadf)
-adonis2(bray.dist ~ AB, data = metadf, permutations = 9999) # NOT significant
+adonis2(bray.dist ~ AB, data = metadf)
 adonis2(bray.dist ~ Farm2, data = metadf)
 adonis2(bray.dist ~ Cox, data = metadf)
 adonis2(bray.dist ~ Researcher, data = metadf)
 adonis2(bray.dist ~ LitterType, data = metadf)
-adonis2(bray.dist ~ Gender, data = metadf)
-adonis2(bray.dist ~ FarmRoundStable, data = metadf)
+adonis2(bray.dist ~ Gender, data = metadf) # not sign
+adonis2(bray.dist ~ Stables, data = metadf)
 
 # and BC
 
 jaccard.dist <- distance(ps1.rel, "jaccard")
 
 adonis2(jaccard.dist ~ Age, data = metadf)
-adonis2(jaccard.dist ~ AB, data = metadf) # NOT significant
+adonis2(jaccard.dist ~ AB, data = metadf)
 adonis2(jaccard.dist ~ Farm2, data = metadf)
 adonis2(jaccard.dist ~ Cox, data = metadf)
 adonis2(jaccard.dist ~ Researcher, data = metadf)
 adonis2(jaccard.dist ~ LitterType, data = metadf)
-adonis2(jaccard.dist ~ Gender, data = metadf)
-adonis2(jaccard.dist ~ FarmRoundStable, data = metadf)
+adonis2(jaccard.dist ~ Gender, data = metadf) # not sign
+adonis2(jaccard.dist ~ Stables, data = metadf)
 
-# as well as jaccard..
+# as well as jaccard
+
+# PERMANOVA plots - Age
+
+permanova_age <- adonis(t(assay(tse, "relabundance")) ~ Age, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_age)["Age1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                       levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on age",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# AB
+
+permanova_AB <- adonis(t(assay(tse, "relabundance")) ~ AB, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_AB)["AB1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on AB",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Stable
+
+permanova_stable <- adonis(t(assay(tse, "relabundance")) ~ Stables, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_stable)["Stables1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on Stable",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Farm
+
+permanova_farm <- adonis(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_farm)["Farm21",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on Farm",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# AB
+
+permanova_agent <- adonis(t(assay(tse, "relabundance")) ~ Cox, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_agent)["Cox1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on agent",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# same plots but for genera
+
+#  Age
+
+permanova_age <- adonis(t(assay(tse_genus, "relabundance")) ~ Age, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_age)["Age1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on age",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# AB
+
+permanova_AB <- adonis(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_AB)["AB1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on AB",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Stable
+
+permanova_stable <- adonis(t(assay(tse_genus, "relabundance")) ~ Stables, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_stable)["Stables1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on Stable",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Farm
+
+permanova_farm <- adonis(t(assay(tse_genus, "relabundance")) ~ Farm2, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_farm)["Farm21",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on Farm",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# AB
+
+permanova_agent <- adonis(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_agent)["Cox1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on agent",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
 
 
-adonis2(dist(otu_table(subset16S), method='euclidean') ~ Age, 
-        data=metadf)
 
-
-
-
-permanova_age <- adonis2(unifrac.dist ~ Age, data = metadf)
+permanova_age <- adonis(unifrac.dist ~ Age, data = metadf)
 permanova_AB <- adonis2(unifrac.dist ~ AB, data = metadf)
 permanova_farm <- adonis2(unifrac.dist ~ Farm2, data = metadf)
 permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
@@ -299,51 +492,117 @@ permanova_researcher <- adonis2(unifrac.dist ~ Researcher, data = metadf)
 permanova_LitterType <- adonis2(unifrac.dist ~ LitterType, data = metadf)
 permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
 
+# checking homogeneity condition - bray
+# ANOVAs are performed on betadispers of our rel abund data to test whether groups are more variable than others
 
-ps.disper <- betadisper(unifrac.dist, metadf$Age)
-permutest(ps.disper, pairwise = TRUE)
+# Bray
+ps.rel = microbiome::transform(subset16S, "compositional")
+meta = meta(ps.rel)
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Age))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$AB))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Farm2))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Stables))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Cox))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Researcher))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$LitterType)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Gender)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$FlockSize))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$AgeParentStock)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$FeedProducent))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$FeedType))
 
+# Jaccard
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Age))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$AB))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Farm2))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Stables))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Researcher))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$LitterType)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Gender)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$FlockSize))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$AgeParentStock)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$FeedProducent))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$FeedType))
+
+# group variances are not homogenous in most cases, so there are differences in variances between groups -> bad for anova / permanova
+
+# Tukey tests can be performed to see if and which groups differ in relation to variance
+
+TukeyHSD(betadisper(vegdist(t(abundances(ps.rel))), meta$Farm2))
+
+
+# different way of calculating homogeneity, permutation tests, null = no difference in dispersion between groups 
+permutest(betadisper(vegdist(t(abundances(ps.rel))), meta$Age), pairwise = TRUE)
+
+permutest(betadisper(unifrac.dist, metadf$Age), pairwise = TRUE) # looks like unifrac distances are homogenously dispersed for age
+permutest(betadisper(unifrac.dist, metadf$AB), pairwise = TRUE) # not for AB though
+
+permutest(betadisper(bray.dist, metadf$Age), pairwise = TRUE) # there are differences in P value with other method, but could be number of permutations
+
+# SIMPER - we'll use MT as abbreviation for metataxonomics instead of 16s since R does not like its objects starting with numbers
 
 source("../Results/Scripts/Steinberger_scripts/simper_pretty.r")
 source("../Results/Scripts/Steinberger_scripts/R_krusk.r")
 
-simper.pretty(otu_table(subset16S), metrics = sample_data(Rps), interesting = c("Age", "AB", "Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "16S")
+#Age 
 
-simper.results = data.frame(read.csv("16s_clean_simper.csv"))
+simper.pretty(otu_table(subset16S), metrics = sample_data(subset16S), interesting = c("Age"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MT_age")
 
+MT_age =  data.frame(read.csv("MT_age_clean_simper.csv"))
 
-simper.results = data.frame(read.csv("Rps_clean_simper_16s.csv"))
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = MT_age, interesting = c('Age'), output_name =  'MT_age')
 
-kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = simper.results, interesting = c('Age'), output_name =  'Age')
+KW_MT_age = data.frame(read.csv("MT_Age_krusk_simper.csv"))
+KW_MT_age = KW_MT_age[KW_MT_age$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_age = KW_MT_age[with(KW_MT_age, order(SIMPER, decreasing = TRUE)),]
+KW_MT_age$OTU = as.factor(KW_MT_age$OTU)
 
-kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = simper.results, interesting = c('AB'), output_name =  'AB')
+KW_MT_age %>% mutate_if(is.numeric, format.pval, 2) %>% dplyr::select("SIMPER", "OTU", "fdr_krusk_p.val") %>%
+  rowwise() %>% mutate(Combined = paste("ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
 
+#AB
+simper.pretty(otu_table(subset16S), metrics = sample_data(subset16S), interesting = c("AB"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MT_AB")
 
-class(sample_data(subset16S))
+MT_AB =  data.frame(read.csv("MT_AB_clean_simper.csv"))
 
-KW.results = data.frame(read.csv("Age_krusk_simper.csv"))
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = MT_AB, interesting = c('AB'), output_name =  'MT_AB')
 
-KW.results = KW.results[KW.results$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_AB = data.frame(read.csv("MT_AB_krusk_simper.csv"))
+KW_MT_AB = KW_MT_AB[KW_MT_AB$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_AB = KW_MT_AB[with(KW_MT_AB, order(SIMPER, decreasing = TRUE)),]
+KW_MT_AB$OTU = as.factor(KW_MT_AB$OTU)
 
-KW.results = KW.results[with(KW.results, order(OTU)),]
-head(KW.results)
+KW_MT_AB %>% mutate_if(is.numeric, format.pval, 2) %>% dplyr::select("SIMPER", "OTU", "fdr_krusk_p.val") %>% 
+  rowwise() %>% mutate(Combined = paste("ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined)
 
-abund = otu_table(Rps)/rowSums(otu_table(Rps))*100
+#Farms - too many comparisons so maybe too extensive for report
 
+simper.pretty(otu_table(subset16S), metrics = sample_data(subset16S), interesting = c("Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MT_Farm")
 
-boxplot(unlist(data.frame(abund["tet(O/32/O)_5_FP929050"])) ~ sample_data(Rps)$Age, ylab="% Relative abundance", main="OTU1")
+MT_Farm =  data.frame(read.csv("MT_Farm_clean_simper.csv"))
 
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = MT_Farm, interesting = c('Farm2'), output_name =  'MT_Farm')
 
-for (otu in KW.results$OTU) {
-  print(otu)
-  
-}
+KW_MT_Farm = data.frame(read.csv("MT_Farm_krusk_simper.csv"))
+KW_MT_Farm = KW_MT_Farm[KW_MT_Farm$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_Farm = KW_MT_Farm[with(KW_MT_Farm, order(SIMPER, decreasing = TRUE)),]
+KW_MT_Farm$OTU = as.factor(KW_MT_Farm$OTU)
 
-kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/32/O)_5_FP929050"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+KW_MT_Farm %>% mutate_if(is.numeric, format.pval, 2) %>% dplyr::select("Comparison", "SIMPER", "OTU", "fdr_krusk_p.val") %>%
+  rowwise() %>% mutate(Combined = paste(Comparison, "ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
 
-kruskal.test(unlist(data.frame(otu_table(Rps)["tet(O/W/32/O)_1_EF065523"]), use.names = FALSE) ~ sample_data(Rps)$Age)
+# plots to look at specific ASVs (age)
+abund = otu_table(subset16S)/rowSums(otu_table(subset16S))*100
+boxplot(unlist(data.frame(abund["224597762"])) ~ sample_data(subset16S)$Age, ylab="% Relative abundance", main="OTU1")
 
+# specific test
+kruskal.test(unlist(data.frame(otu_table(subset16S)["224597762"]), use.names = FALSE) ~ sample_data(subset16S)$Age)
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(KW.results, dist, ord_meths, pcoa_bc, pcoa_jaccard, pcoa_jsd, pcoa_unifrac, pcoa_wunifrac, simper.results, pdataframe, metadf)
-
+rm(KW_MT_AB, KW_MT_age, KW_MT_Farm, MT_AB, MT_age, MT_Farm, permanova_AB, permanova_agent, permanova_farm, permanova_age,
+   permanova_stable, dist, ord_meths, pcoa_bc, pcoa_jaccard, pcoa_jsd, pcoa_unifrac, pcoa_wunifrac, simper.results,
+   pdataframe, metadf, ps1.rel, df, tse, tse2, tse_genus, plist, bray.dist, unifrac.dist, wunifrac.dist, jsd.dist,
+   jaccard.dist, coef, top.coef, meta, ps.rel, abund)

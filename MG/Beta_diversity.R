@@ -1,6 +1,5 @@
 #### Load packages
 library(scater) # For functions like plotReducedDim(), calculating dissimiilarity matrices etc. 
-library(mia) # microbiome analysis package, making tse
 library(vegan) # used to run simper
 library(nlme) # 
 
@@ -343,5 +342,5 @@ kruskal.test(unlist(data.frame(otu_table(subsetMG)["tet(O/W/32/O)_1_EF065523"]),
 
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(KW.results, dist, ord_meths, pcoa_bc, pcoa_jaccard, pcoa_jsd, pcoa_unifrac, pcoa_wunifrac, simper.results, pdataframe, metadf)
-
+rm(KW_MG_AB, KW_MG_age, KW_MG_Farm, MG_AB, MG_age, MG_Farm, permanova_AB, permanova_agent, permanova_farm, permanova_age, 
+   permanova_stable, dist, ord_meths, pcoa_bc, pcoa_jaccard, pcoa_jsd, pcoa_unifrac, pcoa_wunifrac, simper.results, pdataframe, metadf)

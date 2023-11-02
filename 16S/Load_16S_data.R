@@ -15,9 +15,10 @@ library(data.table) # Giving overview of data.
 library(tidyverse) # Data handling and much more.
 library(readxl) # Reading in excel files.
 library(ape) # Phylogenetic package, used for creating random trees and as dependency for other packages.
-library(magrittr) # Data handling, specifically assignment pipes
-library(microViz) # Both analysis and visualisation
-library(plyr) # to apply functions, transform data
+library(magrittr) # Data handling, specifically assignment pipes.
+library(microViz) # Both analysis and visualisation.
+library(plyr) # to apply functions, transform data.
+library(microbiome) # For data analysis and visualisation, reading phyloseq object.
 
 
 ### create phyloseq object
@@ -63,7 +64,7 @@ sort(sample_sums(subset16S)) # Amount of unique taxa"per sample, the min is 4673
 summary(sample_sums(subset16S)) # summary of the sampling depths
 sample_variables(subset16S) # metadata variables
 
-# temp solution:
+# Rewriting sampleIDs as sample_unique rownames to align with the other datasets
 
 sample_names(subset16S) = sample_data(subset16S)$Sample_Unique
 sample_names(subset16S)
@@ -91,7 +92,10 @@ sample_data(subset16S)$FarmRoundStable = as.factor(sample_data(subset16S)$FarmRo
 subset16S@sam_data$Stables = revalue(sample_data(subset16S)$FarmRoundStable, c("Farm1R1S1"="Stable1", "Farm1R1S2"="Stable2", "Farm2R1S1"="Stable3", "Farm2R1S2"="Stable4",
                                                                               "Farm2R2S1"="Stable5", "Farm2R2S2"="Stable6", "Farm3R1S1"="Stable7", "Farm3R1S2"="Stable8",
                                                                               "Farm4R1S1"="Stable9", "Farm4R1S2"="Stable10"))
-subset16S@sam_data$Stables
+# Shortening agent names
+subset16S@sam_data$Cox[subset16S@sam_data$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+subset16S@sam_data$Cox[subset16S@sam_data$Cox == "narasin(monteban)"] = "Monteban"
+subset16S@sam_data$Cox[subset16S@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 # declutter R environment by removing objects that no longer serve a purpose
 rm(pseq, ps, subset, treefile)

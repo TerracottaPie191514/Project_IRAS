@@ -8,12 +8,10 @@ library(magrittr) # Data handling, specifically assignment pipes
 library(microViz) # Both analysis and visualisation
 library(plyr) # to apply functions, transform data
 
-
-
-### loading a subset of metagenomic data into phyloseq format
+### Loading a subset of metagenomic data into phyloseq format
 subsetMG= import_biom("kraken2_output.biom") # this imports a .biom created by kraken2-biom  containing OTU and tax tables, with [fF]irm_x_x names as sample_names
 
-#We rewrite the sample names to a format filtering out Firm and firm and the first underscore so that it lines up with the column of our meta data
+# We rewrite the sample names to a format filtering out Firm and firm and the first underscore so that it lines up with the column of our meta data
 sample_names(subsetMG) = sapply(regmatches(sample_names(subsetMG), regexpr("_", sample_names(subsetMG)), invert = TRUE), "[[", 2) 
 
 # Because the names in both metadata sets do not completely overlap, we need to manually edit one of the samples whose name was not included in the FIRM metadata file
@@ -96,7 +94,10 @@ sample_data(subsetMG)$FarmRoundStable = as.factor(sample_data(subsetMG)$FarmRoun
 subsetMG@sam_data$Stables = revalue(sample_data(subsetMG)$FarmRoundStable, c("Farm1R1S1"="Stable1", "Farm1R1S2"="Stable2", "Farm2R1S1"="Stable3", "Farm2R1S2"="Stable4",
                                                                               "Farm2R2S1"="Stable5", "Farm2R2S2"="Stable6", "Farm3R1S1"="Stable7", "Farm3R1S2"="Stable8",
                                                                               "Farm4R1S1"="Stable9", "Farm4R1S2"="Stable10"))
-subsetMG@sam_data$Stables
+# Shortening agent names
+subsetMG@sam_data$Cox[subsetMG@sam_data$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+subsetMG@sam_data$Cox[subsetMG@sam_data$Cox == "narasin(monteban)"] = "Monteban"
+subsetMG@sam_data$Cox[subsetMG@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 # declutter R environment by removing objects that no longer serve a purpose
 rm(meta_data, firm_names, meta_data_MG, microbial_load, random_tree,) 
