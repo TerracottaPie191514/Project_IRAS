@@ -217,6 +217,7 @@ ggboxplot(hmp.meta,
           y = "Phylogenetic_Diversity",
           fill = "AB",
           palette = "lancet",
+          order = c("no","yes"),
           ylab = "Phylogenetic Diversity",
           xlab = "Antibiotics used",
           legend = "right",
@@ -397,6 +398,6 @@ rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(subsetMG)$AB + (1|
 summary(rm.shannon.all)
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(p1, p2, p3, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.observed.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.observed.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
+rm(p1, p2, p3, p4, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.observed.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.observed.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
 
 rm(aov.shannon.age_farm, aov.shannon.age_AB, aov.shannon.age_all, aov.simpson.farm)

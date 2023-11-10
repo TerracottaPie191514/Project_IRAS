@@ -126,6 +126,7 @@ tse <- runMDS(tse,
               FUN = vegan::vegdist,
               method = "bray")
 
+hc_bray <- hclust(vegdist(t(assay(tse, "relabundance")), method = "bray"), method = "complete")
 plot(hc_bray)
 hcd = as.dendrogram(hc_bray)
 

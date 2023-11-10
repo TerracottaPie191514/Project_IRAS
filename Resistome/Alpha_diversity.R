@@ -5,23 +5,52 @@ library(QsRutils) # For the goods() function, to estimate coverage
 
 # used the following guides: https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/alpha-diversities.html, https://rpubs.com/maddieSC/R_SOP_BRC_Oct_2019, https://rpubs.com/lconteville/713954
 
-otu_tab <- t(abundances(Rps)) # can use veganotu() function for this
-otu_tab2 <- t(abundances(Rps_tpm))
-otu_tab3 <- t(abundances(Rps_mp))
+
+# For rarefaction to function, and good coverage tests to make sense, we need to have integers for our data, we will create
+# copies of the phyloseqs, and then round the otu tables
+
+Rps_copy = Rps
+Rps_mp_copy = Rps_mp
+Rps_tpm_copy = Rps_tpm
+
+#rounding the "counts"
+otu_table(Rps_copy) = otu_table(round(as((otu_table(Rps_copy)), "matrix")), taxa_are_rows(Rps_copy))
+otu_table(Rps_tpm_copy) = otu_table(round(as((otu_table(Rps_tpm_copy)), "matrix")), taxa_are_rows(Rps_tpm_copy))
+otu_table(Rps_mp_copy) = otu_table(round(as((otu_table(Rps_mp_copy)), "matrix")), taxa_are_rows(Rps_mp_copy))
 
 
-# rarefaction curve
-vegan::rarecurve(otu_tab,
-                      step = 50, label = FALSE,
-                      sample = min(rowSums(otu_tab),
-                                   col = "blue", cex = 0.6))
+# Earlier renditions of this script also scaled the otu table by a factor 1000 to preserve data, but this proved problematic in later stages
+Rps_scaled_copy = Rps
+Rps_mp_scaled_copy = Rps_mp
+
+otu_table(Rps_scaled_copy) = otu_table(Rps_scaled_copy) * 1000
+otu_table(Rps_mp_scaled_copy) = otu_table(Rps_mp_scaled_copy) * 1000
+
+otu_table(Rps_scaled_copy) = otu_table(round(as((otu_table(Rps_scaled_copy)), "matrix")), taxa_are_rows(Rps_scaled_copy))
+otu_table(Rps_mp_scaled_copy) = otu_table(round(as((otu_table(Rps_mp_scaled_copy)), "matrix")), taxa_are_rows(Rps_mp_scaled_copy))
+
+otu_tab <- t(abundances(Rps_copy)) # can use veganotu() function for this
+otu_tab2 <- t(abundances(Rps_tpm_copy))
+otu_tab3 <- t(abundances(Rps_mp_copy))
+
+otu_tab4 <- t(abundances(Rps_scaled_copy))
+otu_tab5 <- t(abundances(Rps_mp_scaled_copy))
+
+# rarefaction curves
+vegan::rarecurve(otu_tab, step = 500, label = FALSE) # kraken2
+vegan::rarecurve(otu_tab2, step = 5000, label = FALSE) # TPM k2 (this data has smallest count 10)
+vegan::rarecurve(otu_tab3, step = 500, label = FALSE) #MP
+
+vegan::rarecurve(otu_tab4, step = 500000, label = FALSE) # k2 scaled
+vegan::rarecurve(otu_tab5, step = 500000, label = FALSE) #MP scaled
+# These two curves completely artificially flatten out, clearly because of the scaling
 
 # we can add lines to show sampling depths
-rarecurve(otu_tab, step=50, ylab = "ARGs")
-abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
+rarecurve(otu_tab, step=500, ylab = "ARGs")
+abline(v=sample_sums(Rps), lty='dotted', lwd=0.5) # k2
   
-rarecurve(otu_tab3, step=500000, ylab = "ARGs", label = FALSE)
-abline(v=sample_sums(Rps), lty='dotted', lwd=0.5)
+rarecurve(otu_tab3, step=500, ylab = "ARGs")
+abline(v=sample_sums(Rps_mp), lty='dotted', lwd=0.5) # MP
 
 
 # virtually no samples are reaching a plateau so sequencing depth is not appropriate, undersampling for most of the dataset
@@ -36,15 +65,68 @@ vegan::rarecurve(otu_tab2,
 
 # we use Good's coverage test to see the amount of singletons in the samples
 
-summary(goods(otu_tab3)) # on average, 0.65% of the reads in the samples are singletons 
+summary(goods(otu_tab3)) # on average, 0.65% of the reads in the samples are singletons for mp 
+
+summary(goods(otu_tab)) # on average, 0.31% of the reads in the samples are singletons for k2
 
 summary(goods(otu_tab2)) # there are no singletons in tpm
 
-Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S1")) %>% veganotu() %>% goods() %>% summary()
-# for the stable Farm2R1S1, on average, 4.5% of the reads in the samples are singletons
 
 
-# rarefy to equal library size or not?
+Rps_mp_copy %>% ps_filter(FarmRoundStable == c("Farm2R1S1")) %>% veganotu() %>% goods() %>% summary()
+# for the stable Farm2R1S1 on mp, on average, 4.5% of the reads in the samples are singletons
+Rps_copy %>% ps_filter(FarmRoundStable == c("Farm2R1S1")) %>% veganotu() %>% goods() %>% summary()
+# for k2, this is only 0.73%
+
+# rarefy to equal library size or not? (mp)
+lib.div <- microbiome::alpha(Rps_mp, index = "all")
+lib.div2 <- richness(Rps_mp)
+lib.div$ReadsPerSample <- sample_sums(Rps_mp)
+lib.div$chao1 <- lib.div2$chao1
+colnames(lib.div)
+p1 = ggscatter(lib.div, "diversity_shannon", "ReadsPerSample", xlab = "Shannon diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "Inverse Simpson diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
+  stat_cor(method = "pearson")
+
+df.pd <- pd(t(as.data.frame(Rps_mp@otu_table)), Rps_mp@phy_tree,include.root=T) # transposing for use in picante
+lib.div$Phylogenetic_Diversity <- df.pd$PD
+
+p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
+  stat_cor(method = "pearson")
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+# there seems to be increases of reads/sample for PD and observed
+
+# However, in the rarefaction curves, we can clearly see three outliers, with very large sample sizes and ARGs
+# let's see what happens when we remove these for the same graph
+Rps_trim = Rps_mp %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
+
+lib.div <- microbiome::alpha(Rps_trim, index = "all")
+lib.div2 <- richness(Rps_trim)
+lib.div$ReadsPerSample <- sample_sums(Rps_trim)
+lib.div$chao1 <- lib.div2$chao1
+colnames(lib.div)
+p1 = ggscatter(lib.div, "diversity_shannon", "ReadsPerSample", xlab = "Shannon diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "Inverse Simpson diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
+  stat_cor(method = "pearson")
+
+df.pd <- pd(t(as.data.frame(Rps_trim@otu_table)), Rps_trim@phy_tree,include.root=T) # transposing for use in picante
+lib.div$Phylogenetic_Diversity <- df.pd$PD
+
+p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
+  stat_cor(method = "pearson")
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+# even when we remove the outliers, there is a positive correlation
+
+# repeat this for k2
 
 lib.div <- microbiome::alpha(Rps, index = "all")
 lib.div2 <- richness(Rps)
@@ -66,29 +148,48 @@ p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phy
 
 ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 
-p4
+# we can clearly see an increase in reads/sample when increasing abundance ( at least for PD and observed ), so we would typically require a rarefaction for FPKM data
 
-# we can clearly see an increase in reads/sample when increasing abundance, so we require a rarefaction for FPKM data
+
+# rarefy to equal library size or not? (k2)
+
+Rps_trim = Rps %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
+
+lib.div <- microbiome::alpha(Rps_trim, index = "all")
+lib.div2 <- richness(Rps_trim)
+lib.div$ReadsPerSample <- sample_sums(Rps_trim)
+lib.div$chao1 <- lib.div2$chao1
+colnames(lib.div)
+p1 = ggscatter(lib.div, "diversity_shannon", "ReadsPerSample", xlab = "Shannon diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "Inverse Simpson diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
+  stat_cor(method = "pearson")
+
+df.pd <- pd(t(as.data.frame(Rps_trim@otu_table)), Rps_trim@phy_tree,include.root=T) # transposing for use in picante
+lib.div$Phylogenetic_Diversity <- df.pd$PD
+
+p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
+  stat_cor(method = "pearson")
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+# Now, this positive correlation has completely disappeared
 
 set.seed(1337)
 
-ps0.rar <- rarefy_even_depth(Rps, sample.size = 118) # we do not want to lose samples so lowest sample size is maintained, 492! OTUs are removed
+ps0.rar <- rarefy_even_depth(Rps, sample.size = 118) # we do not want to lose samples so lowest sample size is maintained, 484! taxa are removed
 
-ps0.rar <- srs_p(Rps) # we do not want to lose samples so lowest sample size is maintained, 492! OTUs are removed
-
-# In the rarefaction curves, we can clearly see three outliers, with very large sample sizes and ARGs
-
-# remove problematic samples
-Rps %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
-
+#ps0.rar <- srs_p(Rps) alternative way of rarefaction 
 
 
 sample_data(Rps_mp)$Sample_Unique = sample_names(Rps_mp)
 sample_variables(Rps_mp)
 Rps_mp %<>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
 
-# function not advisable generally > ?rarefy_even_depth()
 
+# dit onderstaande hoeft niet meer, weghalen
 # In order to create taxa prevalence plots with these functions, we need to change our "taxa" levels to the names of actual taxa
 # Phylum = AMR_class_primary, Order = AMR_class_secondary, Class = ARGCluster90, Family = ID_Clust_Refsequence
 colnames(ps0.rar@tax_table) = c("Phylum", "Order", "Class","Family") 
@@ -101,7 +202,7 @@ colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
 plot_taxa_prevalence(ps_tpmcopy, "Phylum") # TPM data
 
 
-# We will be using a different type of rarefaction
+# We will be using a different type of rarefaction (or not)
 
 seed=1337
 set.seed(seed)
@@ -126,10 +227,11 @@ for( i in 2:nsamples) {
   Rps_rar <- merge_phyloseq(Rps_rar, m.tmp)
 }
 
+Rps_rar # error: sample.size less than or equal to zero. Need positive sample size to work. lost 36 samples
 
 # calculating alpha diversity measures
 
-hmp.div <- microbiome::alpha(Rps, index = "all") # use ps0.rar if rarefied
+hmp.div <- microbiome::alpha(Rps, index = "all")
 
 datatable(hmp.div)
 
@@ -141,11 +243,6 @@ colnames(div.df)
 
 
 #based on microbial agent
-# Shortening names
-div.df$Cox[div.df$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
-div.df$Cox[div.df$Cox == "narasin(monteban)"] = "Monteban"
-div.df$Cox[div.df$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
-
 div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
 colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
 
@@ -172,11 +269,6 @@ ggboxplot(div_df_melt, x = "Agent", y = "value",
 df.pd <- pd(t(as.data.frame(Rps@otu_table)), Rps@phy_tree,include.root=T) # transposing for use in picante
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
-# Shortening names
-hmp.meta$Cox[hmp.meta$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
-hmp.meta$Cox[hmp.meta$Cox == "narasin(monteban)"] = "Monteban"
-hmp.meta$Cox[hmp.meta$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
-
 ggboxplot(hmp.meta,
                      x = "Cox",
                      y = "Phylogenetic_Diversity",
@@ -190,12 +282,7 @@ ggboxplot(hmp.meta,
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
 stat_compare_means(
   comparisons = L.pairs,
-  label = "p.signif",
-  symnum.args = list(
-    cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 0.1, 1),
-    symbols = c("****", "***", "**", "*", "n.s")
-  )
-) + geom_jitter(size = 0.7, alpha = 0.9)
+  label = "p.signif",) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 # age / days
@@ -214,9 +301,7 @@ ggboxplot(div_df_melt, x = "Age", y = "value",
           scales = "free",
           title = "FPKM Alpha diversity metrics by age",
           outlier.shape = NA) + 
-  rremove("x.text") + stat_compare_means(
-    method = "wilcox.test",) + geom_jitter(size = 0.7, alpha = 0.9)
-
+  rremove("x.text") + stat_compare_means(method = "wilcox.test", size = 3.1) + geom_jitter(size = 0.7, alpha = 0.9)
 
 ggboxplot(hmp.meta,
           x = "Age",
@@ -230,7 +315,7 @@ ggboxplot(hmp.meta,
           outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means(method = "wilcox.test", paired = TRUE) + geom_jitter(size = 0.7, alpha = 0.9)
-    
+
 
 # farms / company
 
@@ -256,6 +341,8 @@ ggboxplot(div_df_melt, x = "Farm", y = "value",
                         comparisons = L.pairs,
                         label = "p.signif"
           ) + geom_jitter(size = 0.7, alpha = 0.9)
+df.pd <- pd(t(as.data.frame(Rps@otu_table)), Rps@phy_tree,include.root=T) # transposing for use in picante
+hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
 
 ggboxplot(hmp.meta,
@@ -309,9 +396,29 @@ ggboxplot(hmp.meta,
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
+# based on stable
+
+div.df2 <- div.df[, c("Stable", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Stable", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
 
 
-# alternative way of plotting
+div_df_melt <- reshape2::melt(div.df2)
+
+ggboxplot(hmp.meta,
+          x = "Stable",
+          y = "Phylogenetic_Diversity",
+          fill = "Age",
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Antibiotics used",
+          legend = "right",
+          title = "FPKM phylogenetic diversity by stable and age",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
+  geom_jitter(size = 0.7, alpha = 0.9)
+
+
+# alternative way of plotting (deprecated)
 
 plot_richness(Rps, x="Age", measures=c("chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"), color = "Age", nrow = 2)+
   geom_boxplot(alpha=0.6) + 
@@ -333,9 +440,6 @@ hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
 hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
 hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
 hist(lib.div$diversity_coverage, main="Coverage diversity", xlab="")
-
-
-
 
 # If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
 # In this case, the data seems roughly normally distributed, we can use Shapiro-Wilk tests to test for normality for individual measures
@@ -543,8 +647,11 @@ rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(Rps)$AB + (1|sampl
 summary(rm.shannon.all)
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(p1, p2, p3, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.chao1.farm, aov.fisher.farm, aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, glm.chao1.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta)
+rm(p1, p2, p3, p4, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.chao1.farm, aov.fisher.farm, 
+   aov.gini_simpson.farm, aov.inv_simpson.farm, aov.pielou.farm, aov.shannon.farm, div_df_melt, div.df, div.df2, 
+   glm.chao1.age, glm.fisher.age, glm.gini_simpson.age, glm.inv_simpson.age, glm.shannon.age, glm.simpson.age, 
+   glm.pielou.age, gaussian.gini_simpson.conc, qp.gini_simpson.conc, df.pd, lib.div, lib.div2, hmp.div, hmp.meta,
+   otu_tab, otu_tab2, otu_tab3, otu_tab4, otu_tab5, Rps_copy, Rps_mp_copy, Rps_tpm_copy, Rps_scaled_copy, Rps_mp_scaled_copy,
+   Rps_trim)
 
 rm(aov.shannon.age_farm, aov.shannon.age_AB, aov.shannon.age_all, aov.simpson.farm)
-
-

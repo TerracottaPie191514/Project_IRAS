@@ -455,7 +455,7 @@ ggbarplot(df, x = "y", y = "x",
           rotate = TRUE,
           ggtheme = theme_minimal())
 
-# AB
+# Agent
 
 permanova_agent <- adonis(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
 

@@ -6,7 +6,7 @@ library(scran) # A wrapper for bluster and tse objects
 library(NbClust) # To find out the optimal number of clusters
 library(dendextend) # For creating dendrograms with additional options
 library(factoextra) # Visualize optomial number of clusters
-library(ecodist)
+library(cluster) # For clustering algorithms, specifically used for PAM.
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microucph.github.io/amplicon_data_analysis/html/cluster.html, https://www.datacamp.com/tutorial/hierarchical-clustering-R, https://rpubs.com/TBrach/68544
 
@@ -22,10 +22,10 @@ assay <- t(assay(tse, "relabundance"))
 diss_jaccard <- vegdist(assay, method = "jaccard")
 
 # different aggregation methods and indices will grant different amount of clusters
-NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "mcclain")$Best.nc # two clusters
-NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "frey")$Best.nc # two clusters
+NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "mcclain")$Best.nc # 2 clusters
+NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "frey")$Best.nc # 2 clusters
 NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "cindex")$Best.nc # 15 clusters
-NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "silhouette")$Best.nc # two clusters
+NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "silhouette")$Best.nc # 2 clusters
 NbClust(diss = diss_jaccard, distance = NULL, method = "complete", index = "dunn")$Best.nc # 9 clusters
 NbClust(diss = diss_jaccard, distance = NULL, method = "ward.D2", index = "silhouette")$Best.nc # 3 clusters
 NbClust(diss = diss_jaccard, distance = NULL, method = "ward.D", index = "silhouette")$Best.nc # 14 clusters
@@ -54,7 +54,7 @@ plotReducedDim(tse, "MDS", colour_by = "clusters")
 
 diss_bray <- vegdist(assay, method = "bray")
 
-diss_euk <- vegdist(assay, method = "euclidian")
+#diss_euk <- vegdist(assay, method = "euclidian")
 
 
 NbClust(diss = diss_bray, distance = NULL, method = "complete", index = "mcclain")$Best.nc # two clusters
@@ -70,14 +70,15 @@ NbClust(diss = diss_bray, distance = NULL, method = "mcquitty", index = "silhoue
 NbClust(diss = diss_bray, distance = NULL, method = "median", index = "silhouette")$Best.nc # 2 clusters
 NbClust(diss = diss_bray, distance = NULL, method = "centroid", index = "silhouette")$Best.nc # 2 clusters
 
-
-
 # silhouette (ASW)
 diss_bray <- as.matrix(diss_bray) 
 fviz_nbclust(diss_bray, kmeans, method = "silhouette") # 2 seems optimal
 fviz_nbclust(diss_bray, cluster::pam, method = "silhouette") # 2 seems optimal for PAM
 fviz_nbclust(diss_bray, hcut, method = "silhouette") # 2 seems optimal for hcut
 
+fviz_nbclust(diss_bray, kmeans, method = "gap_stat") # 1 seems optimal for k-means gap stat
+fviz_nbclust(diss_bray, cluster::pam, method = "gap_stat") # 1 seems optimal for PAM gap stat
+fviz_nbclust(diss_bray, hcut, method = "gap_stat") # 1 seems optimal for hcut gap stat
 
 # k-means 
 set.seed(1337)
@@ -93,7 +94,7 @@ tse_dmn <- mia::runDMN(tse, name = "DMN", k = 1:7) # calculate most likely numbe
 tse_dmn
 getDMN(tse_dmn)
 miaViz::plotDMNFit(tse_dmn, type = "laplace")
-getBestDMNFit(tse_dmn, type = "laplace") # 2 again
+getBestDMNFit(tse_dmn, type = "laplace") # 1 cluster seems optimal
 
 # genus level
 
@@ -103,7 +104,7 @@ tse_dmn <- mia::runDMN(tse_genus, name = "DMN", k = 1:7) # calculate most likely
 tse_dmn
 getDMN(tse_dmn)
 miaViz::plotDMNFit(tse_dmn, type = "laplace")
-getBestDMNFit(tse_dmn, type = "laplace") # Gives 3! as best fit for genus level data
+getBestDMNFit(tse_dmn, type = "laplace") # Gives 1 as best fit for genus level data
 
 # phylum level
 
@@ -113,7 +114,7 @@ tse_dmn <- mia::runDMN(tse_phylum, name = "DMN", k = 1:7) # calculate most likel
 tse_dmn
 getDMN(tse_dmn)
 miaViz::plotDMNFit(tse_dmn, type = "laplace")
-getBestDMNFit(tse_dmn, type = "laplace") # Gives 2 as best fit for phylum level data
+getBestDMNFit(tse_dmn, type = "laplace") # Gives 1 as best fit for phylum level data
 
 
 # Hierarchal clustering BC asv
@@ -126,6 +127,7 @@ tse <- runMDS(tse,
               method = "bray"
 )
 
+hc_bray <- hclust(vegdist(t(assay(tse, "relabundance")), method = "bray"), method = "complete")
 plot(hc_bray)
 hcd = as.dendrogram(hc_bray)
 
@@ -154,9 +156,9 @@ col_val_map <- randomcoloR::distinctColorPalette(k) %>%
 
 dend <- color_branches(dendro, k = 2, col = unlist(col_val_map))
 labels(dend) <- NULL
-plot(dend) # based on all three visualisations, only a few samples are clustered distinctly, based on splitting at the root, which is not informative
+plot(dend) # very similar to 16S scripts: based on two visualisations, only a few samples are clustered distinctly, 
+# based on splitting at the root, which is not informative. this particular plot splits it more down the middle# PAM clustering
 
-# PAM clustering
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
 
 tse <- transformCounts(tse, method = "relabundance")
@@ -171,6 +173,71 @@ pam.out
 labels_colors(hcd) <- colorCode[pam.out][order.dendrogram(hcd)]
 plot(hcd)
 
+# Create PAM PCoA - from 2 to 10 clusters
+phy_rel <- transform_sample_counts(subsetMG, function(x) log10(x+1/sum(x+1)))
+UF <- UniFrac(phy_rel, weighted = TRUE)
+n_clust <- 2:10
+pam_list <- lapply(n_clust, function(x) pam(UF, k = x))
+
+sil_width <- lapply(pam_list, function(x) mean(x$silinfo$widths[, "sil_width"]))
+plot(n_clust, sil_width, type="l")
+pcoa_data <- cmdscale(UF, eig = TRUE)
+pcoa_df <- data.frame(PC1 = c(pcoa_data$points[,1]),
+                      PC2 = c(pcoa_data$points[,2]),
+                      Sample = rownames(pcoa_data$points))
+
+# Add sample data
+Samp <- data.frame(sample_data(subsetMG))
+Samp$Sample <- sample_names(subsetMG)
+
+pcoa_df <- merge(pcoa_df, Samp, by = "Sample")
+
+# Add cluster information
+clusters <- factor(pam_list[[which.max(sil_width)]]$clustering)
+pcoa_df <- merge(pcoa_df, clusters, by.x = "Sample", by.y = "row.names")
+colnames(pcoa_df)[ncol(pcoa_df)] <- "PAM"
+
+# Variance explained
+ve <- pcoa_data$eig/sum(pcoa_data$eig)
+
+# Plot
+ggplot(pcoa_df, aes(x = PC1, y = PC2, color = PAM)) +
+  theme_bw() +
+  geom_point() +
+  xlab(paste0("PCoA 1 (",round(ve[1]*100,1),"%)")) +
+  ylab(paste0("PCoA 2 (",round(ve[2]*100,1),"%)"))
+
+# facet by clusters and colour by farm
+ggplot(pcoa_df, aes(x = PC1, y = PC2, color = Farm2)) +
+  theme_bw() +
+  geom_point() +
+  xlab(paste0("PCoA 1 (",round(ve[1]*100,1),"%)")) +
+  ylab(paste0("PCoA 2 (",round(ve[2]*100,1),"%)")) +
+  facet_wrap(~PAM)
+
+# facet by clusters and colour by AB
+ggplot(pcoa_df, aes(x = PC1, y = PC2, color = AB)) +
+  theme_bw() +
+  geom_point() +
+  xlab(paste0("PCoA 1 (",round(ve[1]*100,1),"%)")) +
+  ylab(paste0("PCoA 2 (",round(ve[2]*100,1),"%)")) +
+  facet_wrap(~PAM)
+
+# facet by clusters and colour by Age
+ggplot(pcoa_df, aes(x = PC1, y = PC2, color = Age)) +
+  theme_bw() +
+  geom_point() +
+  xlab(paste0("PCoA 1 (",round(ve[1]*100,1),"%)")) +
+  ylab(paste0("PCoA 2 (",round(ve[2]*100,1),"%)")) +
+  facet_wrap(~PAM)
+
+# facet by clusters and colour by Agent
+ggplot(pcoa_df, aes(x = PC1, y = PC2, color = Cox)) +
+  theme_bw() +
+  geom_point() +
+  xlab(paste0("PCoA 1 (",round(ve[1]*100,1),"%)")) +
+  ylab(paste0("PCoA 2 (",round(ve[2]*100,1),"%)")) +
+  facet_wrap(~PAM)
 
 # PCoA for ASV data, BC with DMM, euclidian ( make sure tse_dmn is on right taxonomic level)
 
@@ -189,7 +256,7 @@ DirichletMultinomial::mixturewt(getBestDMNFit(tse_dmn)) # measure weights
 head(DirichletMultinomial::mixture(getBestDMNFit(tse_dmn))) # sample-cluster assignment probablities
 head(DirichletMultinomial::fitted(getBestDMNFit(tse_dmn))) # taxa contribution
 prob <- DirichletMultinomial::mixture(getBestDMNFit(tse_dmn))
-colnames(prob) <- c("comp1", "comp2")
+colnames(prob) <- c("comp1")
 vec <- colnames(prob)[max.col(prob, ties.method = "first")]
 assay(tse, "pseudo") <- assay(tse, "counts") + 1
 tse <- transformCounts(tse, assay.type = "pseudo", method = "relabundance")
@@ -247,4 +314,6 @@ res <- lapply(k, ClustDiagPlot)
 
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(tse_phylum, tse_dmn, assay, diss_jaccard, diss_bray)
+rm(tse_phylum, tse_dmn, assay, diss_jaccard, diss_bray, k, dmn_group, euclidean_pcoa_df, euclidean_dmm_pcoa_df, plots, 
+   res, ve, Samp, clusters, pam.out, phy_rel, UF, n_clust, pam_list, sil_width, pcoa_df, tse, tse_genus, hc_bray, km,
+   hcd, dend, dendro, col_val_map, hclust.out, pcoa_data, prob, df, cbPalette, colorCode, grouping, vec)

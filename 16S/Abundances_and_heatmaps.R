@@ -99,7 +99,7 @@ psmelt(ps_prim) %>% # Agent
   labs(x = "", y = "Abundance\n") +
   facet_wrap(~ Genus, scales = "free")
 
-# Check the amount of uniqe genera in samples which have and have not been treated with antibiotics
+# Check the amount of unique genera in samples which have and have not been treated with antibiotics
 subset16S %>% ps_filter(AB == "no") %>% get_taxa_unique("Genus") # 93 different genera for non AB treated
 subset16S %>% ps_filter(AB == "yes") %>% get_taxa_unique("Genus") # 74 different genera for AB treated
 subset16S %>% get_taxa_unique("Genus") # 93 different genes in total, which are all present in non-treated

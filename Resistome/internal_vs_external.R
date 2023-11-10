@@ -55,3 +55,30 @@ combined %>% tax_fix(unknowns = c("g__")) %>%
   comp_barplot("Phylum", facet_by = "dataset", n_taxa = 4, palette = colorRampPalette(brewer.pal(5,"Accent"))(5),
                other_name = "Other Phyla", merge_other = F, sample_order = "asis") +
   coord_flip() + ggtitle("External vs internal dataset")
+
+# procrustes
+
+
+#Procrustes analyses
+
+PCoA_BC_int = ordinate(internalps, "PCoA") 
+PCoA_BC_ext = ordinate(externalps, "PCoA") 
+procrustes = protest(PCoA_BC_int$vectors, PCoA_BC_ext$vectors)
+
+plot_data <- data.frame(
+  int_PC1 = procrustes$X[, 1],
+  int_PC2 = procrustes$X[, 2],
+  ext_PC1 = procrustes$Yrot[, 1],
+  ext_PC2 = procrustes$Yrot[, 2]
+)
+
+sample_pairs = data.frame("int_sample"=rownames(PCoA_BC_int$vectors), "ext_sample"=rownames(PCoA_BC_ext$vectors)) 
+
+ggplot(plot_data) +
+  geom_point(aes(x=ext_PC1, y=ext_PC2), color = "green") +
+  geom_point(aes(x=int_PC1, y=int_PC2), color = "blue") +
+  geom_segment(aes(x=int_PC1,y=int_PC2,xend=ext_PC1,yend=ext_PC2),arrow=arrow(type = "closed", length=unit(0.2,"cm"))) +
+  labs(title = "Procrustes Plot internal vs external server") # there is complete overlap, only one colour shows
+
+# declutter R environment by removing objects that no longer serve a purpose
+rm(externalps, internalps, sample_pairs, plot_data, procrustes, PCoA_BC_int, PCoA_BC_ext, dataset1, dataset2, combined) 
