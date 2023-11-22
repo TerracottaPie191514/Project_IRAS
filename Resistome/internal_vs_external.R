@@ -45,7 +45,7 @@ combined %>% tax_fix(unknowns = c("g__")) %>%
                other_name = "Other Genera", merge_other = F, sample_order = "asis") +
   coord_flip() + ggtitle("External vs internal dataset")
 
-# phylum
+ # phylum
 combined <- phyloseq::merge_phyloseq(
   dataset1  %>% tax_agg("Phylum") %>% ps_get(),
   dataset2  %>% tax_agg("Phylum") %>% ps_get()
@@ -56,10 +56,7 @@ combined %>% tax_fix(unknowns = c("g__")) %>%
                other_name = "Other Phyla", merge_other = F, sample_order = "asis") +
   coord_flip() + ggtitle("External vs internal dataset")
 
-# procrustes
-
-
-#Procrustes analyses
+#Procrustes analysis
 
 PCoA_BC_int = ordinate(internalps, "PCoA") 
 PCoA_BC_ext = ordinate(externalps, "PCoA") 

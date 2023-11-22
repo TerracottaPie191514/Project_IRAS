@@ -77,5 +77,5 @@ ggplot(plot_data) +
   scale_color_manual(values = c("16S" = "black", "MG" = "blue")) +
   guides(color = guide_legend(title = "Data Type"))
 
-# declutter R environment by removing objects that no longer serve a purpose
+  # declutter R environment by removing objects that no longer serve a purpose
 rm(PCoA_BC_16s, PCoA_BC_MG, PCoA_BC_Rps, PCoA_BC_MP, PCoA_BC_k2, plot_data, procrustes, copy16S, copyRps) 

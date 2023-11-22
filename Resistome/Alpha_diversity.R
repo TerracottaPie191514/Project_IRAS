@@ -103,6 +103,10 @@ ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
 
 # However, in the rarefaction curves, we can clearly see three outliers, with very large sample sizes and ARGs
 # let's see what happens when we remove these for the same graph
+
+sample_data(Rps_mp)$Sample_Unique = sample_names(Rps_mp)
+sample_variables(Rps_mp) 
+
 Rps_trim = Rps_mp %>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
 
 lib.div <- microbiome::alpha(Rps_trim, index = "all")
@@ -184,57 +188,11 @@ ps0.rar <- rarefy_even_depth(Rps, sample.size = 118) # we do not want to lose sa
 #ps0.rar <- srs_p(Rps) alternative way of rarefaction 
 
 
-sample_data(Rps_mp)$Sample_Unique = sample_names(Rps_mp)
-sample_variables(Rps_mp)
-Rps_mp %<>% subset_samples(Sample_Unique != "10_1" & Sample_Unique != "10_2" & Sample_Unique != "10_3") 
-
-
-# dit onderstaande hoeft niet meer, weghalen
-# In order to create taxa prevalence plots with these functions, we need to change our "taxa" levels to the names of actual taxa
-# Phylum = AMR_class_primary, Order = AMR_class_secondary, Class = ARGCluster90, Family = ID_Clust_Refsequence
-colnames(ps0.rar@tax_table) = c("Phylum", "Order", "Class","Family") 
-plot_taxa_prevalence(ps0.rar, "Phylum")
-pscopy = Rps
-colnames(pscopy@tax_table) = c("Phylum", "Order", "Class","Family")
-plot_taxa_prevalence(pscopy, "Phylum") # Sadly we can see entire phyla disappear, as well as many individual values, this rarefaction is deemed not appropriate either way
-ps_tpmcopy = Rps_tpm
-colnames(ps_tpmcopy@tax_table) = c("Phylum", "Order", "Class","Family")
-plot_taxa_prevalence(ps_tpmcopy, "Phylum") # TPM data
-
-
-# We will be using a different type of rarefaction (or not)
-
-seed=1337
-set.seed(seed)
-
-ssum <- sample_sums(Rps)
-ssum
-ssum2 <- round(ssum/5000,0)
-ssum2
-
-nsamples <- length(sample_names(Rps)) # amount of samples
-
-#first do 1st sample then build around it the rest
-i=1
-m.tmp <- subset_samples( Rps, sample_names(Rps) == sample_names(Rps)[i] )
-m.tmp <- rarefy_even_depth( m.tmp, sample.size=ssum2[i], trimOTUs=FALSE, rngseed=seed )
-
-Rps_rar <- m.tmp
-
-for( i in 2:nsamples) {
-  m.tmp <- subset_samples( Rps, sample_names(Rps) == sample_names(Rps)[i] )
-  m.tmp <- rarefy_even_depth( m.tmp, sample.size=ssum2[i], trimOTUs=FALSE, rngseed=seed )
-  Rps_rar <- merge_phyloseq(Rps_rar, m.tmp)
-}
-
-Rps_rar # error: sample.size less than or equal to zero. Need positive sample size to work. lost 36 samples
-
-# calculating alpha diversity measures
+# We will use k2 corrected data
 
 hmp.div <- microbiome::alpha(Rps, index = "all")
 
 datatable(hmp.div)
-
 hmp.meta <- meta(Rps)
 hmp.meta$sam_name <- rownames(hmp.meta)
 hmp.div$sam_name <- rownames(hmp.div)
@@ -396,26 +354,28 @@ ggboxplot(hmp.meta,
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
-# based on stable
+# based on stable and age
 
-div.df2 <- div.df[, c("Stable", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "chao1", "diversity_coverage", "evenness_pielou")]
-colnames(div.df2) <- c("Stable", "Inverse Simpson", "Gini-Simpson", "Shannon", "chao1", "Coverage", "Pielou")
-
+div.df2 <- div.df[, c("Stables", "Age", "diversity_shannon")]
+colnames(div.df2) <- c("Stable", "Age", "Shannon")
 
 div_df_melt <- reshape2::melt(div.df2)
 
-ggboxplot(hmp.meta,
-          x = "Stable",
-          y = "Phylogenetic_Diversity",
+lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
+
+ggboxplot(div_df_melt, x = "Stable", y = "value",
           fill = "Age",
           palette = "lancet",
-          ylab = "Phylogenetic Diversity",
-          xlab = "Antibiotics used",
-          legend = "right",
-          title = "FPKM phylogenetic diversity by stable and age",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Shannon diversity by stable and age",
+          xlab = FALSE,
+          ylab = FALSE,
           outlier.shape = NA) + rotate_x_text() + 
-  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
-  geom_jitter(size = 0.7, alpha = 0.9)
+  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) + geom_jitter(size = 0.7, alpha = 0.9)
+
 
 
 # alternative way of plotting (deprecated)
@@ -440,16 +400,18 @@ hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
 hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
 hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
 hist(lib.div$diversity_coverage, main="Coverage diversity", xlab="")
+hist(lib.div$Phylogenetic_Diversity, main="Coverage diversity", xlab="")
 
 # If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
 # In this case, the data seems roughly normally distributed, we can use Shapiro-Wilk tests to test for normality for individual measures
-shapiro.test(lib.div$chao1) # test deems it  normally distributed p>0,05
+shapiro.test(lib.div$chao1) # test deems it not normally distributed p<0,05
 shapiro.test(lib.div$diversity_shannon) # test deems this measure not normally distributed p<0,05
-shapiro.test(lib.div$diversity_fisher) # test deems this measure not normally distributed p<0,05
+#shapiro.test(lib.div$diversity_fisher) # impossible to calcuate
 shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed p<0,05
 shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed p>0,05
-shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p>0,05
+shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p<0,05
+shapiro.test(lib.div$Phylogenetic_Diversity) # test deems this measure normally distributed p>0,05
 
 
 # Fairly small sample sizes however, and the shaprio-wilk test is not perfect, we will assume normality for all measures except for Shannon and Gini-simpson diversity based on the graphs
@@ -461,20 +423,9 @@ shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally 
 
 # Normally distributed with only 2 levels, so we can use t-tests : 
 
-t.test(lib.div$chao1 ~ sample_data(Rps)$Age)
-
-t.test(lib.div$diversity_shannon ~ sample_data(Rps)$Age) # shannon diversity does not seem to significantly differ across the different age groups
-
-t.test(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
-
-t.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) 
-
-t.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age) # not significant
-
 t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
 
-t.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) # not significant
-
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(Rps)$Age) # not significant
 
 # Non-normally distributed
 
@@ -482,40 +433,29 @@ wilcox.test(lib.div$chao1 ~ sample_data(Rps)$Age)
 
 wilcox.test(lib.div$diversity_shannon ~ sample_data(Rps)$Age) # shannon diversity does not seem to significantly differ across the different age groups
 
-wilcox.test(lib.div$diversity_fisher ~ sample_data(Rps)$Age)
-
 wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age) # remove this later
 
 wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$Age) # not significant
 
-wilcox.test(lib.div$evenness_pielou ~ sample_data(Rps)$Age) 
+wilcox.test(lib.div$diversity_coverage ~ sample_data(Rps)$Age) # not significant
 
 
 boxplot(lib.div$diversity_gini_simpson ~ sample_data(Rps)$Age, ylab="Gini-Simpson's diversity") # the boxplots are quite similar so this is not unexpected
 
-# For age, the groups seems significantly different in chao1, shannon, fisher diversity and simpson evenness, but not in gini-simpson, inverse simpson diversity, and pielou evenness.
+# For age, none of the groups significantly differ
 
 # Antibiotics
 
-t.test(lib.div$chao1 ~ sample_data(Rps)$AB) # not significant
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(Rps)$AB) # not significant
 
 t.test(lib.div$evenness_pielou ~ sample_data(Rps)$AB) # not significant
-
-# used these functions to get means and sd per variable and alpha diversity metric
-lib.div.ab = lib.div
-lib.div.ab$AB = sample_data(Rps)$AB
-
-aggregate(lib.div.ab$evenness_pielou, list(lib.div.ab$AB), FUN=mean) 
-aggregate(lib.div.ab$evenness_pielou, list(lib.div.ab$AB), FUN=sd) 
-
-# Non-normally distributed
 
 
 wilcox.test(lib.div$diversity_shannon ~ sample_data(Rps)$AB) # shannon diversity does not seem to significantly differ across the different AB groups
 
-wilcox.test(lib.div$diversity_fisher ~ sample_data(Rps)$AB)
+wilcox.test(lib.div$chao1 ~ sample_data(Rps)$AB)
 
-wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # remove this later
+wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(Rps)$AB) # not sign
 
 wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(Rps)$AB) # not significant
 
@@ -523,7 +463,24 @@ wilcox.test(lib.div$diversity_coverage ~ sample_data(Rps)$AB)
 
 boxplot(lib.div$evenness_pielou ~ sample_data(Rps)$AB, ylab="pielou") # the boxplots are quite similar so this is not unexpected
 
-# AB does not seem to significantly differ in their alpha diversities 
+# AB does not seem to significantly differ in their alpha diversities
+
+# used these functions to get means and sd per variable and alpha diversity metric
+#lib.div.ab = lib.div
+#lib.div.ab$AB = sample_data(Rps)$AB
+
+#aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$AB), FUN=mean) 
+#aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$AB), FUN=sd) 
+
+
+#lib.div.age = lib.div
+#lib.div.age$Age = sample_data(Rps)$Age
+
+#aggregate(lib.div.age$diversity_coverage, list(lib.div.age$Age), FUN=mean) 
+#aggregate(lib.div.age$diversity_coverage, list(lib.div.age$Age), FUN=sd)
+
+
+# Non-normally distributed
 
 # Farm has more than 2 levels, so we will use ANOVAs
 

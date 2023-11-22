@@ -70,8 +70,6 @@ hmp.div$sam_name <- rownames(hmp.div)
 div.df <- merge(hmp.div,hmp.meta, by = "sam_name")
 colnames(div.df)
 
-
-#based on microbial agent
 div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
 colnames(div.df2) <- c("Agent", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
 
@@ -225,6 +223,29 @@ ggboxplot(hmp.meta,
           outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
+
+# based on stable and age
+
+div.df2 <- div.df[, c("Stables", "Age", "diversity_shannon")]
+colnames(div.df2) <- c("Stable", "Age", "Shannon")
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
+
+ggboxplot(div_df_melt, x = "Stable", y = "value",
+          fill = "Age",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Shannon diversity by stable and age",
+          xlab = FALSE,
+          ylab = FALSE,
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) + geom_jitter(size = 0.7, alpha = 0.9)
+
 
 ## Looking at significance
 

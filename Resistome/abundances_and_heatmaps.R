@@ -12,6 +12,20 @@ plot_bar(Rps, fill="AMR_class_primary", title = "Absolute abundances per sample 
 plot_bar(Rps_mp, fill="AMR_class_primary", title = "Absolute abundances per sample (FPKM) - Metaphlan")
 plot_bar(Rps_tpm, fill="AMR_class_primary", title = "Absolute abundances per sample (TPM)")
 
+
+# on average, for the three outliers, abundance is 
+mean(sample_sums(Rps)[c("10_1","10_2","10_3")]) # 31928.03
+# on average, the samples without the three outliers, abundance is
+mean(sample_sums(Rps)[!sample_names(Rps) %in% c("10_1","10_2","10_3")]) # 6183.18
+# so there are 5,1636x as much abundance in these samples
+
+# MP:
+# on average, for the three outliers, abundance is 
+mean(sample_sums(Rps_mp)[c("10_1","10_2","10_3")]) # 78089.08
+# on average, the samples without the three outliers, abundance is
+mean(sample_sums(Rps_mp)[!sample_names(Rps_mp) %in% c("10_1","10_2","10_3")]) # 14828.26
+# 5,266x as much abundance
+
 # Amount of different AMR classes present.
 sort(table(tax_table(Rps)[, "AMR_class_primary"]))
 sort(table(tax_table(Rps)[, "ARGCluster90"]))
@@ -470,11 +484,27 @@ tse_AMRClass <- tse_AMRClass[top_taxa, ]
 # Phylum AB heatmap
 tse_AMRClass@metadata$anno_colors$AB = c(yes = "darkred",no ="darkblue")
 
+
 sechm(tse_AMRClass,
       features = rownames(tse_AMRClass),
       assayName = "clr",
       do.scale = TRUE,
-      top_annotation = "AB", 
+      top_annotation = c("AB"), 
+      gaps_at = "AB",
+      hmcols = viridis(256),
+      cluster_cols = TRUE, cluster_rows = TRUE)
+
+# heatmap with AB and stable
+
+tse_AMRClass@metadata$anno_colors$Stable = (brewer.pal(n=10, name = "Set3"))
+
+
+
+sechm(tse_AMRClass,
+      features = rownames(tse_AMRClass),
+      assayName = "clr",
+      do.scale = TRUE,
+      top_annotation = c("AB"), 
       gaps_at = "AB",
       hmcols = viridis(256),
       cluster_cols = TRUE, cluster_rows = TRUE)
@@ -670,4 +700,6 @@ pheatmap(mat, annotation_row = taxa_clusters,
 
 
 # declutter environment
-rm(ps_prim, ps_rel_abund, dataset1, dataset2, combined)
+rm(ps_prim, tse, tse_phylum, taxmat, taxic, taxa_tree, taxa_hclust, taxa_clusters, subset16S.rel, sample_tree,
+   sample_hclust, sample_data, ps1.com, ps1.com.fam, plots, plot, phylum_renamed, mat, legend, guide_italics,
+   breaks, new.tax, sample_clusters, samples_ordered, taxa_ordered, top_taxa)

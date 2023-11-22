@@ -2,23 +2,1180 @@
 title: "Project_IRAS"
 author: "Martijn Melissen"
 date: "2023-11-10"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = "C:/Users/Martijn/Documents/uni/project_IRAS/Data")
 ```
 
+guides used: https://www.nicholas-ollberding.com/post/introduction-to-the-statistical-analysis-of-microbiome-data-in-r/, https://rpubs.com/lconteville/713954, https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/beta-diversity-metrics.html, https://rfunctions.blogspot.com/2019/03/betadisper-and-adonis-homogeneity-of.html
+
+#### Load packages
+```{r}
+library(phyloseq) # Data analysis and visualisation, also the basis of data object.
+library(DT) # Interactive tables in html and markdown.
+library(data.table) # Giving overview of data.
+library(tidyverse) # Data handling and much more.
+library(readxl) # Reading in excel files.
+library(ape) # Phylogenetic package, used for creating random trees and as dependency for other packages.
+library(magrittr) # Data handling, specifically assignment pipes.
+library(microViz) # Both analysis and visualisation.
+library(plyr) # to apply functions, transform data.
+library(microbiome) # For data analysis and visualisation, reading phyloseq object.
+library(ggpubr) # Publication quality figures, based on ggplot2.
+library(RColorBrewer) # Color options.
+library(microbiomeutilities) # Some utility tools for microbiome package.
+library(mia) # microbiome analysis package, making tse objects.
+library(sechm) # Used for plotting heatmaps.
+library(ggtree) # For creating trees, hierarchical clustering for heatmaps
+library(pheatmap) # Creating heatmaps.
+library(viridis) # Creating colour pallettes.
+library(patchwork) # Used to add plots together into the same plot.
+library(data.table) # Alternative to data.frame
+library(picante) # Used for calculating Phylogenetic diversities
+library(lme4) # Repeated measures, add to report if used
+library(QsRutils) # For the goods() function, to estimate coverage
+library(scater) # plotReducedDim
+library(vegan) # used to run simper
+library(nlme) # for usage of llply(), to apply functions over lists
+library(mia) # Broad package, includes clustering functions.
+library(bluster) # Used for clustering.
+library(scater) # visualisation, reduced dimensions.
+library(scran) # A wrapper for bluster and tse objects.
+library(NbClust) # To find out the optimal number of clusters.
+library(dendextend) # For creating dendrograms with additional options, labeling etc.
+library(factoextra) # Visualize optomial number of clusters.
+library(cluster) # For clustering algorithms, specifically used for PAM.
+```
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+### Loading in 16S data
+```{r}
+pseq <- read_phyloseq(otu.file= "ASV.biom1",
+                      taxonomy.file = NULL,
+                      metadata.file = "MetaData.csv",
+                      type="biom", sep =";" )
+
+treefile <- read_tree("all_asvTREE.tree")
+ps <-merge_phyloseq(pseq, treefile)
+ps # 180 samples
+
+sort(sample_sums(ps))
+
+### overview data
+datatable(tax_table(ps))
+
+### remove some contamination to filter out plant and eukaryote data that had chloroplast and mitochondrium bacterial dna
+subset <- subset_taxa(ps, Domain !="NA")
+subset <- subset_taxa(subset,Family !="f__Mitochondria=*")
+subset <- subset_taxa(subset,Family !="f__Mitochondria")
+subset <- subset_taxa(subset, Order !="o__Chloroplast")
+subset <- subset_taxa(subset, Domain!="k__Archaea")
+
+### remove taxa with zeros
+subset <- prune_taxa(taxa_sums(subset) > 0, subset)
+
+### subset phyloseq object n=120 metagenomics data
+subset16S  <- subset_samples(subset,  Metagenomics == "yes" )    #n=120
+subset16S <- prune_taxa(taxa_sums(subset16S) > 0, subset16S)
+subset16S # 120 samples
+
+# cleaning out all kinds of overlapping names from taxonomy table, removing ~*, =* and =<empty>, this helps to avoid problems with gene abundance later down the line
+subset16S@tax_table = gsub("=\\*|~\\*|\\*|<empty>","",subset16S@tax_table)
+
+# overview data
+datatable(tax_table(subset16S))
+rank_names(subset16S) # Shows classes and ARGs
+sort(get_taxa_unique(subset16S, "Genus")) # Shows unique genera
+sort(sample_sums(subset16S)) # Amount of unique taxa"per sample, the min is 46731 and max 393697, which is within a factor 10 difference
+summary(sample_sums(subset16S)) # summary of the sampling depths
+sample_variables(subset16S) # metadata variables
+
+# Rewriting sampleIDs as sample_unique rownames to align with the other datasets
+
+sample_names(subset16S) = sample_data(subset16S)$Sample_Unique
+sample_names(subset16S)
+
+# Stable "Farm2R1S1"  has the three lowest sampling depths of the dataset, the other nine samples are fairly average
+subset16S %>% ps_filter(FarmRoundStable == c("Farm2R1S1")) %>% sample_sums() %>% sort()
+
+# Amount of different taxa present.
+sort(table(tax_table(subset16S)[, "Phylum"]))
+sort(table(tax_table(subset16S)[, "Order"]))
+sort(table(tax_table(subset16S)[, "Family"]))
+
+# factorizing variables as not to create problems with visualization later down the line
+sample_data(subset16S)$Cluster = as.factor(sample_data(subset16S)$Cluster)
+sample_data(subset16S)$FlockSize = as.factor(sample_data(subset16S)$FlockSize)
+sample_data(subset16S)$AgeParentStock = as.factor(sample_data(subset16S)$AgeParentStock)
+sample_data(subset16S)$Age = as.factor(sample_data(subset16S)$Age)
+sample_data(subset16S)$LibraryNumber = as.factor(sample_data(subset16S)$LibraryNumber)
+
+# add stable column with shorter names
+sample_data(subset16S)$FarmRoundStable = as.factor(sample_data(subset16S)$FarmRoundStable)
+subset16S@sam_data$Stables = revalue(sample_data(subset16S)$FarmRoundStable, c("Farm1R1S1"="Stable1", "Farm1R1S2"="Stable2", "Farm2R1S1"="Stable3", "Farm2R1S2"="Stable4",
+                                                                              "Farm2R2S1"="Stable5", "Farm2R2S2"="Stable6", "Farm3R1S1"="Stable7", "Farm3R1S2"="Stable8",
+                                                                              "Farm4R1S1"="Stable9", "Farm4R1S2"="Stable10"))
+# Shortening agent names
+subset16S@sam_data$Cox[subset16S@sam_data$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
+subset16S@sam_data$Cox[subset16S@sam_data$Cox == "narasin(monteban)"] = "Monteban"
+subset16S@sam_data$Cox[subset16S@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
+
+# declutter R environment by removing objects that no longer serve a purpose
+rm(pseq, ps, subset, treefile)
 ```
 
+## Alpha diversity
+
+```{r}
+otu_tab <- t(abundances(subset16S))
+# rarefaction curve
+vegan::rarecurve(otu_tab,
+                      step = 50, label = FALSE,
+                      sample = min(rowSums(otu_tab),
+                                   col = "blue", cex = 0.6))
+# samples plateau so sufficient sequencing depth
+
+summary(goods(otu_tab)) # there are no singletons in this data, already filtered out, means that richness estimates are probably unreliable or wrong
+
+```
+
+```{r}
+#rarefy to equal library size or not?
+lib.div <- microbiome::alpha(subset16S, index = "all")
+lib.div2 <- richness(subset16S)
+lib.div$ReadsPerSample <- sample_sums(subset16S)
+lib.div$Observed <- lib.div2$observed
+colnames(lib.div)
+p1 = ggscatter(lib.div, "diversity_shannon", "ReadsPerSample", xlab = "Shannon diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p2 = ggscatter(lib.div, "diversity_inverse_simpson", "ReadsPerSample",  xlab = "Inverse Simpson diversity", add = "loess") +
+  stat_cor(method = "pearson")
+p3 = ggscatter(lib.div, "observed", "ReadsPerSample",  xlab = "Observed", add = "loess") +
+  stat_cor(method = "pearson")
+
+df.pd <- pd(t(as.data.frame(subset16S@otu_table)), subset16S@phy_tree,include.root=T) # transposing for use in picante
+lib.div$Phylogenetic_Diversity <- df.pd$PD
+
+p4 = ggscatter(lib.div, "Phylogenetic_Diversity", "ReadsPerSample",  xlab = "Phylogenetic diversity", add = "loess") +
+  stat_cor(method = "pearson")
+
+ggarrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+```
+removal of samples with lower sequencing depth not necessary for 16S dataset
+
+```{r}
+plot_taxa_prevalence(subset16S, "Phylum") # taxa prevalence plot
+```
+
+```{r}
+hmp.div <- microbiome::alpha(subset16S, index = "all") 
+hmp.meta <- meta(subset16S)
+hmp.meta$sam_name <- rownames(hmp.meta)
+hmp.div$sam_name <- rownames(hmp.div)
+div.df <- merge(hmp.div,hmp.meta, by = "sam_name")
+colnames(div.df)
+
+
+#based on microbial agent
+div.df2 <- div.df[, c("Cox", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Cox", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Maxiban","Sacox","Monteban","None")
+L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+
+ggboxplot(div_df_melt, x = "Cox", y = "value",
+          fill = "Cox",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          xlab = "Antimicrobial agent",
+          title = "Alpha diversity metrics by microbial agent",
+          outlier.shape = NA) + 
+  rremove("x.text") + stat_compare_means(
+    comparisons = L.pairs,
+    label = "p.signif"
+  ) + geom_jitter(size = 0.7, alpha = 0.9)
+
+df.pd <- pd(t(as.data.frame(subset16S@otu_table)), subset16S@phy_tree,include.root=T) # transposing for use in picante
+hmp.meta$Phylogenetic_Diversity <- df.pd$PD
+
+ggboxplot(hmp.meta,
+          x = "Cox",
+          y = "Phylogenetic_Diversity",
+          fill = "Cox",
+          order = c("Maxiban","Sacox","None","Monteban"),
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Antimicrobial agent",
+          legend = "right",
+          title = "Phylogenetic diversity by microbial agent",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
+  stat_compare_means(
+    comparisons = L.pairs,
+    label = "p.signif"
+    ) + geom_jitter(size = 0.7, alpha = 0.9)
+  
+
+
+# age / days
+
+div.df2 <- div.df[, c("Age", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Age", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+
+div.df2$Age = as.factor(div.df2$Age)
+div_df_melt <- reshape2::melt(div.df2)
+
+ggboxplot(div_df_melt, x = "Age", y = "value",
+          fill = "Age",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          title = "Alpha diversity metrics by age",
+          outlier.shape = NA) + 
+  rremove("x.text") + stat_compare_means(method = "wilcox.test", size = 3.1) + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+ggboxplot(hmp.meta,
+          x = "Age",
+          y = "Phylogenetic_Diversity",
+          fill = "Age",
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Age",
+          legend = "right",
+          title = "Phylogenetic diversity by age",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
+  stat_compare_means(paired = TRUE) + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+# farms / company
+
+div.df2 <- div.df[, c("Farm2", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Farm", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Farm1","Farm2","Farm3","Farm4")
+L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+
+ggboxplot(div_df_melt, x = "Farm", y = "value",
+          fill = "Farm",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Alpha diversity metrics by farm",
+          outlier.shape = NA) + rotate_x_text() + rremove("x.text") + stat_compare_means(method = "wilcox.test",
+                                                                                         comparisons = L.pairs,
+                                                                                         label = "p.signif"
+          ) + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+ggboxplot(hmp.meta,
+          x = "Farm2",
+          y = "Phylogenetic_Diversity",
+          fill = "Farm2",
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Farm",
+          legend = "right",
+          title = "Phylogenetic diversity by farm",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12),  axis.title.x = element_blank()) +
+  stat_compare_means(
+    comparisons = L.pairs,
+    label = "p.signif"
+  ) + geom_jitter(size = 0.7, alpha = 0.9)
+
+# stable
+
+div.df2 <- div.df[, c("Stables", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("Stable", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
+L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
+
+
+ggboxplot(div_df_melt, x = "Stable", y = "value",
+          fill = "Stable",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Alpha diversity metrics by stable",
+          outlier.shape = NA) + rotate_x_text() + rremove("x.text") + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+ggboxplot(hmp.meta,
+          x = "Stables",
+          y = "Phylogenetic_Diversity",
+          fill = "Stables",
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Farm",
+          legend = "right",
+          title = "Phylogenetic diversity by stable",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12),  
+        axis.title.x = element_blank()) + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+# based on AB
+
+div.df2 <- div.df[, c("AB", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
+colnames(div.df2) <- c("AB", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
+
+
+div_df_melt <- reshape2::melt(div.df2)
+
+ggboxplot(div_df_melt, x = "AB", y = "value",
+          fill = "AB",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          xlab = "Antibiotics used",
+          title = "Alpha diversity metrics by antibiotic usage",
+          outlier.shape = NA) + 
+  rremove("x.text") + stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
+
+
+ggboxplot(hmp.meta,
+          x = "AB",
+          y = "Phylogenetic_Diversity",
+          fill = "AB",
+          palette = "lancet",
+          ylab = "Phylogenetic Diversity",
+          xlab = "Antibiotics used",
+          legend = "right",
+          title = "Phylogenetic diversity by antibiotic usage",
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
+  stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
+
+# based on stable and age
+
+div.df2 <- div.df[, c("Stables", "Age", "diversity_shannon")]
+colnames(div.df2) <- c("Stable", "Age", "Shannon")
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
+
+ggboxplot(div_df_melt, x = "Stable", y = "value",
+          fill = "Age",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Shannon diversity by stable and age",
+          xlab = FALSE,
+          ylab = FALSE,
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) + geom_jitter(size = 0.7, alpha = 0.9)
+
+```
+## Looking at significance
+
+```{r}
+# Checking for normality
+
+hist(lib.div$observed, main="Observed richness", xlab="")
+hist(lib.div$diversity_shannon, main="Shannon diversity", xlab="")
+hist(lib.div$diversity_fisher, main="Fisher diversity", xlab="")
+hist(lib.div$diversity_gini_simpson, main="Gini-Simpson diversity", xlab="")
+hist(lib.div$diversity_inverse_simpson, main="Inverse Simpson evenness", xlab="")
+hist(lib.div$evenness_pielou, main="Pielou evenness", xlab="")
+hist(lib.div$diversity_coverage, main="Coverage diversity", xlab="")
+
+
+# If data is normally distributed we can use ANOVA / t-tests, if not we will use Kruskal-Wallis tests
+# In this case, the data seems roughly normally distributed for some metrics, we can use Shapiro-Wilk tests to test for normality for individual measures
+shapiro.test(lib.div$observed) # test deems it  normally distributed p>0,05
+shapiro.test(lib.div$diversity_shannon) # test deems this measure not normally distributed p<0,05
+shapiro.test(lib.div$diversity_fisher) # test deems this measure normally distributed p>0,05
+shapiro.test(lib.div$diversity_gini_simpson) # test deems this measure not normally distributed p<0,05
+shapiro.test(lib.div$diversity_inverse_simpson) # test deems this measure not normally distributed p<0,05
+shapiro.test(lib.div$evenness_pielou) # test deems this measure normally distributed p>0,05
+shapiro.test(lib.div$diversity_coverage) # test deems this measure not normally distributed p<0,05
+
+shapiro.test(lib.div$Phylogenetic_Diversity) # test deems this measure normally distributed p>0,05
+
+
+# Based on shaprio-wilk tests we will assume normality for some measures 
+# The variables that we are interested in are the Age, which Farm the samples are from, and whether antibiotics were applied, all of which are categorical variables.
+
+# We will run ANOVAs for the normally distributed variables
+
+# Age
+
+# Normally distributed with only 2 levels, so we can use t-tests : 
+
+t.test(lib.div$observed ~ sample_data(subset16S)$Age) # significant
+
+t.test(lib.div$diversity_fisher ~ sample_data(subset16S)$Age)  # significant
+
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(subset16S)$Age)  # significant
+
+
+# Non-normally distributed
+
+wilcox.test(lib.div$diversity_shannon ~ sample_data(subset16S)$Age) # shannon diversity seems to significantly differ across the different age groups
+
+wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(subset16S)$Age)  # significant
+
+wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(subset16S)$Age)  # significant
+
+wilcox.test(lib.div$evenness_pielou ~ sample_data(subset16S)$Age)  # significant
+
+wilcox.test(lib.div$diversity_coverage ~ sample_data(subset16S)$Age)  # significant
+
+
+
+# For age, the groups seems significantly different in all metrics except simpson evenness.
+
+# Antibiotics
+
+t.test(lib.div$observed ~ sample_data(subset16S)$AB) # significant
+
+t.test(lib.div$diversity_fisher ~ sample_data(subset16S)$AB) # significant
+
+t.test(lib.div$Phylogenetic_Diversity ~ sample_data(subset16S)$AB)  # significant
+
+
+# Non-normally distributed
+
+wilcox.test(lib.div$diversity_shannon ~ sample_data(subset16S)$AB) # shannon diversity does not seem to significantly differ across the different AB groups
+
+wilcox.test(lib.div$diversity_gini_simpson ~ sample_data(subset16S)$AB) # not significant
+
+wilcox.test(lib.div$diversity_inverse_simpson ~ sample_data(subset16S)$AB) # not significant
+
+wilcox.test(lib.div$evenness_pielou ~ sample_data(subset16S)$AB) # not significant
+
+wilcox.test(lib.div$diversity_coverage ~ sample_data(subset16S)$AB) # not significant
+
+
+
+boxplot(lib.div$diversity_fisher ~ sample_data(subset16S)$AB, ylab="fisher") # the boxplots are quite similar so this is not unexpected
+
+# used these functions to get means and sd per variable and alpha diversity metric
+#lib.div.ab = lib.div
+#lib.div.ab$AB = sample_data(subset16S)$AB
+
+aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=mean) 
+aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=sd) 
+
+
+
+# AB does not seem to significantly differ in their alpha diversities except for observed and fisher diversity
+
+# Farm has more than 2 levels, so we will use ANOVAs for normally distributed metrics
+
+aov.observed.farm = aov(lib.div$observed ~ sample_data(subset16S)$Farm2)
+summary(aov.observed.farm)
+TukeyHSD(aov.observed.farm) # only not significant between 1 and 4 and 3 and 2
+
+aov.fisher.farm = aov(lib.div$diversity_fisher ~ sample_data(subset16S)$Farm2)
+summary(aov.fisher.farm)
+TukeyHSD(aov.fisher.farm) # only not significant between 1 and 4 and 3 and 2
+
+
+# Non-normally distributed
+
+kruskal.test(lib.div$diversity_shannon ~ sample_data(subset16S)$Farm2) # shannon diversity seems to significantly differ across the different Farm2 groups
+pairwise.wilcox.test(lib.div$diversity_shannon, sample_data(subset16S)$Farm2, p.adjust.method="fdr") # difference between 1 and 3 and 4 and all other farms
+
+kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(subset16S)$Farm2) # significant
+pairwise.wilcox.test(lib.div$diversity_gini_simpson, sample_data(subset16S)$Farm2, p.adjust.method="fdr") # difference between farm 4 and 2 and 4 and 3
+
+
+kruskal.test(lib.div$diversity_inverse_simpson ~ sample_data(subset16S)$Farm2) # not significant
+pairwise.wilcox.test(lib.div$diversity_inverse_simpson, sample_data(subset16S)$Farm2, p.adjust.method="fdr") # difference between farm 4 and 2 and 4 and 3
+
+kruskal.test(lib.div$evenness_pielou ~ sample_data(subset16S)$Farm2) # significant
+pairwise.wilcox.test(lib.div$evenness_pielou, sample_data(subset16S)$Farm2, p.adjust.method="fdr") # difference between farm 4 and the other farms
+
+
+# agent also has more than 2 levels, so we will use ANOVAs for normally distributed metrics
+
+aov.observed.agent = aov(lib.div$observed ~ sample_data(subset16S)$Cox)
+summary(aov.observed.agent)
+TukeyHSD(aov.observed.agent) # only not significant between sacox and monteban
+
+aov.fisher.agent = aov(lib.div$diversity_fisher ~ sample_data(subset16S)$Cox)
+summary(aov.fisher.agent)
+TukeyHSD(aov.fisher.agent) # only not significant maxiban & monteban and sacox & monteban
+
+
+# Non-normally distributed
+
+kruskal.test(lib.div$diversity_shannon ~ sample_data(subset16S)$Cox) # shannon diversity seems to significantly differ across the different Agent groups
+pairwise.wilcox.test(lib.div$diversity_shannon, sample_data(subset16S)$Cox, p.adjust.method="fdr") # difference between none and sacox, diff between sacox and maxiban, no others
+
+kruskal.test(lib.div$diversity_gini_simpson ~ sample_data(subset16S)$Cox) # significant
+pairwise.wilcox.test(lib.div$diversity_gini_simpson, sample_data(subset16S)$Cox, p.adjust.method="fdr") # only diff between sacox and maxiban and sacox and none
+
+
+kruskal.test(lib.div$diversity_inverse_simpson ~ sample_data(subset16S)$Cox) # not significant
+pairwise.wilcox.test(lib.div$diversity_inverse_simpson, sample_data(subset16S)$Cox, p.adjust.method="fdr") # same as above
+
+kruskal.test(lib.div$evenness_pielou ~ sample_data(subset16S)$Cox) # significant
+pairwise.wilcox.test(lib.div$evenness_pielou, sample_data(subset16S)$Cox, p.adjust.method="fdr") # same as above
+
+
+
+
+# Mixed models, variables might not be independent
+
+aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(subset16S)$Age*sample_data(subset16S)$Farm2)
+summary(aov.shannon.age_farm)
+
+aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(subset16S)$Age+sample_data(subset16S)$Farm2)
+summary(aov.shannon.age_farm)
+
+aov.shannon.age_AB = aov(lib.div$diversity_shannon ~ sample_data(subset16S)$Age*sample_data(subset16S)$AB)
+summary(aov.shannon.age_AB)
+
+aov.shannon.age_AB = aov(lib.div$diversity_shannon ~ sample_data(subset16S)$Age+sample_data(subset16S)$AB)
+summary(aov.shannon.age_AB)
+
+
+aov.shannon.age_all = aov(lib.div$diversity_shannon ~ sample_data(subset16S)$Age*sample_data(subset16S)$AB*sample_data(subset16S)$Farm2*sample_data(subset16S)$Cox*sample_data(subset16S)$FarmRoundStable)
+summary(aov.shannon.age_all)
+
+# repeated measures, look at second guide to figure this out
+
+rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(subset16S)$AB + (1|sample_data(subset16S)$Farm2))
+summary(rm.shannon.all)
+
+
+```
+
+## Beta diversity
+
+```{r}
+estimate_richness(subset16S) # no singletons
+
+dist = "bray"
+ord_meths = c("DCA", "CCA", "RDA", "NMDS", "MDS", "PCoA", "DPCoA")
+plist = llply(as.list(ord_meths), function(i, physeq, dist){
+  ordi = ordinate(subset16S, method=i, distance=dist)
+  plot_ordination(subset16S, ordi, "samples", color="Age", shape = "AB")
+}, subset16S, dist)
+
+names(plist) <- ord_meths
+
+pdataframe = ldply(plist, function(x){
+  df = x$data[, 1:2]
+  colnames(df) = c("Axis_1", "Axis_2")
+  return(cbind(df, x$data))
+})
+names(pdataframe)[1] = "method"
+ggplot(pdataframe, aes(Axis_1, Axis_2, color=Age, shape=AB)) + 
+  geom_point(size=4) + 
+  facet_wrap(~method, scales="free") +
+  scale_fill_brewer(type="qual", palette="Set1") +
+  scale_colour_brewer(type="qual", palette="Set1") +
+  ggtitle("Different ordination methods for 16S data (Bray-Curtis)")
+
+
+# PCoAs for different methods (fancy maken : + theme_classic() + scale_color_brewer("Farm2", palette = "Set2"))
+
+# functionize plotting pcoa
+plot_pcoa_ordination <- function(data, pcoa, var, title) {
+  p <- plot_ordination(data, pcoa, color = var, shape = "AB") +
+    geom_point(size = 3) +
+    labs(title = title, color = var, shape = "Antibiotics used")
+  
+  return(p)
+}
+
+pcoa_bc = ordinate(subset16S, "PCoA", "bray") 
+pcoa_unifrac = ordinate(subset16S, "PCoA", "unifrac") 
+pcoa_wunifrac = ordinate(subset16S, "PCoA", "wunifrac") 
+pcoa_jsd = ordinate(subset16S, "PCoA", "jsd") 
+pcoa_jaccard = ordinate(subset16S, "PCoA", "jaccard", binary=TRUE) 
+
+
+plot_pcoa_ordination(subset16S, pcoa_bc, "Age", "PCoA Bray Curtis")
+plot_pcoa_ordination(subset16S, pcoa_bc, "Farm2", "PCoA Bray Curtis")
+
+# proper order of legend:
+plot_ordination(subset16S, pcoa_bc, color = "Farm2", shape = "AB") +
+  geom_point(size = 3) +
+  labs(title = "PCoA Bray Curtis", color = "Farm", shape = "Antibiotics used")
+
+plot_pcoa_ordination(subset16S, pcoa_unifrac, "Age", "PCoA Unifrac")
+plot_pcoa_ordination(subset16S, pcoa_unifrac, "Farm2", "PCoA Unifrac")
+
+plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Age", "PCoA Weighted Unifrac")
+plot_pcoa_ordination(subset16S, pcoa_wunifrac, "Farm2", "PCoA Weighted Unifrac")
+
+plot_pcoa_ordination(subset16S, pcoa_jsd, "Age", "PCoA Jensen-Shannon Divergence")
+plot_pcoa_ordination(subset16S, pcoa_jsd, "Farm2", "PCoA Jensen-Shannon Divergence")
+
+plot_pcoa_ordination(subset16S, pcoa_jaccard, "Age", "PCoA Jaccard")
+plot_pcoa_ordination(subset16S, pcoa_jaccard, "Farm2", "PCoA Jaccard")
+
+#plot_ordination(subset16S, pcoa_jaccard, color = "Age", shape = "AB", label = "Stables") +  
+#  geom_point(size = 3)  + labs(title = "PCoA Jaccard Age",color = "Age", shape = "Antibiotics used")
+
+
+plot_scree(pcoa_bc) #scree plots can be made for any of the PCoAs, those that explain less than 10% of variance on first axis
+plot_scree(pcoa_jaccard)
+
+# NMDS
+
+tse2 = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
+tse2 %<>%  transformCounts( method = "relabundance")
+tse2 %<>% runNMDS(FUN = vegan::vegdist, name = "BC", nmdsFUN = "monoMDS",
+                  exprs_values = "relabundance",
+                  keep_dist = TRUE)
+
+tse2 %>% plotReducedDim("BC", colour_by = "Age") 
+
+# PERMANOVAs
+
+tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
+tse <- transformCounts(tse, method = "relabundance")
+
+adonis2(t(assay(tse, "relabundance")) ~ AB, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Cox, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Researcher, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ FeedProducent, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ LitterType, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ FeedType, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Gender, data = colData(tse), permutations = 9999) # NIET significant
+adonis2(t(assay(tse, "relabundance")) ~ Stables, data = colData(tse), permutations = 9999) 
+adonis2(t(assay(tse, "relabundance")) ~ FlockSize, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ AgeParentStock, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ Age, data = colData(tse), permutations = 9999)
+
+# variances: AB: 0.026, Cox: 0.102, Researcher: 0.06, FP : 0.067, LitterType: 0.061, FT :0.055, Gender: 0.007, 
+# Stable: 0.167, FS: 0.1245, Farm 0.103, APS : 0.118, Age: 0.054
+# Order: Stable>FS>APS>Farm>Cox>FP>LT>Researcher>FT>Age>AB>Gender
+
+# Mixed models
+adonis2(t(assay(tse, "relabundance")) ~ Stables * AB, data = colData(tse), permutations = 9999) 
+
+
+# basically, composition seems to be different over every single variable, except for gender
+
+# on genus level
+tse_genus <- agglomerateByRank(tse, "Genus")
+tse_genus <- transformCounts(tse_genus, method = "relabundance")
+
+adonis2(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999) 
+adonis2(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Researcher, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FeedProducent, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ LitterType, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FeedType, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Gender, data = colData(tse_genus), permutations = 9999) # NIET significant
+adonis2(t(assay(tse_genus, "relabundance")) ~ Stables, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ FlockSize, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ Farm2, data = colData(tse_genus), permutations = 9999)
+adonis2(t(assay(tse_genus, "relabundance")) ~ AgeParentStock, data = colData(tse_genus), permutations = 9999)
+
+# same trends on genus level (and on phylum level, though p values become higher)
+
+
+# for different ordination methods
+ps1.rel <- microbiome::transform(subset16S, "compositional")
+metadf <- data.frame(sample_data(ps1.rel))
+
+# alternative calculations
+#otu <- abundances(ps1.rel)
+#meta <- meta(ps1.rel)
+#adonis2(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+
+#permanova = adonis(t(otu) ~ Age, data = meta, permutations=9999, method = "bray")
+#permanova$aov.tab
+
+unifrac.dist <- UniFrac(ps1.rel)
+
+adonis2(unifrac.dist ~ Age, data = metadf)
+adonis2(unifrac.dist ~ AB, data = metadf)
+adonis2(unifrac.dist ~ Farm2, data = metadf)
+adonis2(unifrac.dist ~ Cox, data = metadf)
+adonis2(unifrac.dist ~ Researcher, data = metadf)
+adonis2(unifrac.dist ~ LitterType, data = metadf)
+adonis2(unifrac.dist ~ Gender, data = metadf) # not sign
+adonis2(unifrac.dist ~ Stables, data = metadf)
+
+
+# same patterns arise
+
+wunifrac.dist <- UniFrac(ps1.rel, 
+                         weighted = TRUE)
+
+adonis2(wunifrac.dist ~ Age, data = metadf)
+adonis2(wunifrac.dist ~ AB, data = metadf) 
+adonis2(wunifrac.dist ~ Farm2, data = metadf)
+adonis2(wunifrac.dist ~ Cox, data = metadf)
+adonis2(wunifrac.dist ~ Researcher, data = metadf)
+adonis2(wunifrac.dist ~ LitterType, data = metadf)
+adonis2(wunifrac.dist ~ Gender, data = metadf) # not sign
+adonis2(wunifrac.dist ~ Stables, data = metadf)
+
+
+#  same patterns
+
+jsd.dist <- distance(ps1.rel, "jsd")
+
+adonis2(jsd.dist ~ Age, data = metadf)
+adonis2(jsd.dist ~ AB, data = metadf) 
+adonis2(jsd.dist ~ Farm2, data = metadf)
+adonis2(jsd.dist ~ Cox, data = metadf)
+adonis2(jsd.dist ~ Researcher, data = metadf)
+adonis2(jsd.dist ~ LitterType, data = metadf)
+adonis2(jsd.dist ~ Gender, data = metadf) # not sign
+adonis2(jsd.dist ~ Stables, data = metadf)
+
+# same is true for JSD
+
+bray.dist <- distance(ps1.rel, "bray")
+
+adonis2(bray.dist ~ Age, data = metadf)
+adonis2(bray.dist ~ AB, data = metadf)
+adonis2(bray.dist ~ Farm2, data = metadf)
+adonis2(bray.dist ~ Cox, data = metadf)
+adonis2(bray.dist ~ Researcher, data = metadf)
+adonis2(bray.dist ~ LitterType, data = metadf)
+adonis2(bray.dist ~ Gender, data = metadf) # not sign
+adonis2(bray.dist ~ Stables, data = metadf)
+
+# and BC
+
+jaccard.dist <- distance(ps1.rel, "jaccard")
+
+adonis2(jaccard.dist ~ Age, data = metadf)
+adonis2(jaccard.dist ~ AB, data = metadf)
+adonis2(jaccard.dist ~ Farm2, data = metadf)
+adonis2(jaccard.dist ~ Cox, data = metadf)
+adonis2(jaccard.dist ~ Researcher, data = metadf)
+adonis2(jaccard.dist ~ LitterType, data = metadf)
+adonis2(jaccard.dist ~ Gender, data = metadf) # not sign
+adonis2(jaccard.dist ~ Stables, data = metadf)
+
+# as well as jaccard
+
+# PERMANOVA plots - Age
+
+permanova_age <- adonis(t(assay(tse, "relabundance")) ~ Age, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_age)["Age1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                       levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on age",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# AB
+
+permanova_AB <- adonis(t(assay(tse, "relabundance")) ~ AB, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_AB)["AB1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on AB",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Stable
+
+permanova_stable <- adonis(t(assay(tse, "relabundance")) ~ Stables, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_stable)["Stables1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on Stable",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Farm
+
+permanova_farm <- adonis(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_farm)["Farm21",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on Farm",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Agent
+
+permanova_agent <- adonis(t(assay(tse, "relabundance")) ~ Cox, data = colData(tse), permutations = 9999)
+
+coef <- coefficients(permanova_agent)["Cox1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "ASVs",
+          legend.title = "ASV contribution",
+          title = "Impact of bacterial ASVs on agent",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# same plots but for genera
+
+#  Age
+
+permanova_age <- adonis(t(assay(tse_genus, "relabundance")) ~ Age, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_age)["Age1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on age",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# AB
+
+permanova_AB <- adonis(t(assay(tse_genus, "relabundance")) ~ AB, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_AB)["AB1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on AB",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Stable
+
+permanova_stable <- adonis(t(assay(tse_genus, "relabundance")) ~ Stables, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_stable)["Stables1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on Stable",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Farm
+
+permanova_farm <- adonis(t(assay(tse_genus, "relabundance")) ~ Farm2, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_farm)["Farm21",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on Farm",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+# Agent
+
+permanova_agent <- adonis(t(assay(tse_genus, "relabundance")) ~ Cox, data = colData(tse_genus), permutations = 9999)
+
+coef <- coefficients(permanova_agent)["Cox1",]
+top.coef <- sort(head(coef[rev(order(abs(coef)))],20))
+
+df = data.frame(x = top.coef,
+                y = factor(names(top.coef),
+                           unique(names(top.coef))))
+
+df$contr <- factor(ifelse(df$x < 0, "negative", "positive"), 
+                   levels = c("negative", "positive"))
+
+ggbarplot(df, x = "y", y = "x",
+          fill = "contr",           # change fill color by mpg_level
+          color = "white",            # Set bar border colors to white
+          palette = "jco",            # jco journal color palett. see ?ggpar
+          sort.val = "asc",           # Sort the value in ascending order
+          sort.by.groups = FALSE,     # Don't sort inside each group
+          x.text.angle = 90,          # Rotate vertically x axis texts
+          xlab = "Genus",
+          legend.title = "Genus contribution",
+          title = "Impact of bacterial Genera on agent",
+          rotate = TRUE,
+          ggtheme = theme_minimal())
+
+
+
+permanova_age <- adonis(unifrac.dist ~ Age, data = metadf)
+permanova_AB <- adonis2(unifrac.dist ~ AB, data = metadf)
+permanova_farm <- adonis2(unifrac.dist ~ Farm2, data = metadf)
+permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
+permanova_researcher <- adonis2(unifrac.dist ~ Researcher, data = metadf)
+permanova_LitterType <- adonis2(unifrac.dist ~ LitterType, data = metadf)
+permanova_cox <- adonis2(unifrac.dist ~ Cox, data = metadf)
+
+# checking homogeneity condition - bray
+# ANOVAs are performed on betadispers of our rel abund data to test whether groups are more variable than others
+
+# Bray
+ps.rel = microbiome::transform(subset16S, "compositional")
+meta = meta(ps.rel)
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Age))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$AB))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Farm2))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Stables))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Cox))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Researcher))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$LitterType)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$Gender)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$FlockSize))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$AgeParentStock)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$FeedProducent))
+anova(betadisper(vegdist(t(abundances(ps.rel))), meta$FeedType))
+
+# Jaccard
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Age))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$AB))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Farm2))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Stables))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Researcher))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$LitterType)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$Gender)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$FlockSize))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$AgeParentStock)) # homogeneous
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$FeedProducent))
+anova(betadisper(vegdist(t(abundances(ps.rel)), method = "jaccard"), meta$FeedType))
+
+# group variances are not homogenous in most cases, so there are differences in variances between groups -> bad for anova / permanova
+
+# Tukey tests can be performed to see if and which groups differ in relation to variance
+
+TukeyHSD(betadisper(vegdist(t(abundances(ps.rel))), meta$Farm2))
+
+
+# different way of calculating homogeneity, permutation tests, null = no difference in dispersion between groups 
+permutest(betadisper(vegdist(t(abundances(ps.rel))), meta$Age), pairwise = TRUE)
+
+permutest(betadisper(unifrac.dist, metadf$Age), pairwise = TRUE) # looks like unifrac distances are homogenously dispersed for age
+permutest(betadisper(unifrac.dist, metadf$AB), pairwise = TRUE) # not for AB though
+
+permutest(betadisper(bray.dist, metadf$Age), pairwise = TRUE) # there are differences in P value with other method, but could be number of permutations
+
+# SIMPER - we'll use MT as abbreviation for metataxonomics instead of 16s since R does not like its objects starting with numbers
+
+source("../Results/Scripts/Steinberger_scripts/simper_pretty.r")
+source("../Results/Scripts/Steinberger_scripts/R_krusk.r")
+
+#Age 
+
+simper.pretty(otu_table(subset16S), metrics = sample_data(subset16S), interesting = c("Age"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MT_age")
+
+MT_age =  data.frame(read.csv("MT_age_clean_simper.csv"))
+
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = MT_age, interesting = c('Age'), output_name =  'MT_age')
+
+KW_MT_age = data.frame(read.csv("MT_Age_krusk_simper.csv"))
+KW_MT_age = KW_MT_age[KW_MT_age$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_age = KW_MT_age[with(KW_MT_age, order(SIMPER, decreasing = TRUE)),]
+KW_MT_age$OTU = as.factor(KW_MT_age$OTU)
+
+KW_MT_age %>% mutate_if(is.numeric, format.pval, 2) %>% dplyr::select("SIMPER", "OTU", "fdr_krusk_p.val") %>%
+  rowwise() %>% mutate(Combined = paste("ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
+
+#AB
+simper.pretty(otu_table(subset16S), metrics = sample_data(subset16S), interesting = c("AB"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MT_AB")
+
+MT_AB =  data.frame(read.csv("MT_AB_clean_simper.csv"))
+
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = MT_AB, interesting = c('AB'), output_name =  'MT_AB')
+
+KW_MT_AB = data.frame(read.csv("MT_AB_krusk_simper.csv"))
+KW_MT_AB = KW_MT_AB[KW_MT_AB$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_AB = KW_MT_AB[with(KW_MT_AB, order(SIMPER, decreasing = TRUE)),]
+KW_MT_AB$OTU = as.factor(KW_MT_AB$OTU)
+
+KW_MT_AB %>% mutate_if(is.numeric, format.pval, 2) %>% dplyr::select("SIMPER", "OTU", "fdr_krusk_p.val") %>% 
+  rowwise() %>% mutate(Combined = paste("ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined)
+
+#Farms - too many comparisons so maybe too extensive for report
+
+simper.pretty(otu_table(subset16S), metrics = sample_data(subset16S), interesting = c("Farm2"), perc_cutoff=1, low_cutoff = 'y', low_val=0.01, output_name= "MT_Farm")
+
+MT_Farm =  data.frame(read.csv("MT_Farm_clean_simper.csv"))
+
+kruskal.pretty(otu_table(subset16S), metrics = sample_data(subset16S), csv = MT_Farm, interesting = c('Farm2'), output_name =  'MT_Farm')
+
+KW_MT_Farm = data.frame(read.csv("MT_Farm_krusk_simper.csv"))
+KW_MT_Farm = KW_MT_Farm[KW_MT_Farm$fdr_krusk_p.val < 0.05,] # filter out non-significant results, based on fdr
+KW_MT_Farm = KW_MT_Farm[with(KW_MT_Farm, order(SIMPER, decreasing = TRUE)),]
+KW_MT_Farm$OTU = as.factor(KW_MT_Farm$OTU)
+
+KW_MT_Farm %>% mutate_if(is.numeric, format.pval, 2) %>% dplyr::select("Comparison", "SIMPER", "OTU", "fdr_krusk_p.val") %>%
+  rowwise() %>% mutate(Combined = paste(Comparison, "ASV =", OTU, ", SIMPER =", SIMPER, ", p-value =", fdr_krusk_p.val)) %>% 
+  dplyr::select(Combined) 
+
+# plots to look at specific ASVs (age)
+abund = otu_table(subset16S)/rowSums(otu_table(subset16S))*100
+boxplot(unlist(data.frame(abund["224597762"])) ~ sample_data(subset16S)$Age, ylab="% Relative abundance", main="OTU1")
+
+# specific test
+kruskal.test(unlist(data.frame(otu_table(subset16S)["224597762"]), use.names = FALSE) ~ sample_data(subset16S)$Age)
+
+```
 ## Including Plots
 
 You can also embed plots, for example:

@@ -82,8 +82,7 @@ lev = c("Maxiban","Sacox","Monteban","None")
 L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
 
 ggboxplot(div_df_melt, x = "Agent", y = "value",
-          fill = "Agent",
-          order = c("Maxiban","Sacox","None","Monteban"),
+          fill = "Cox",
           palette = "lancet",
           legend= "right",
           facet.by = "variable",
@@ -99,15 +98,11 @@ ggboxplot(div_df_melt, x = "Agent", y = "value",
 df.pd <- pd(t(as.data.frame(subset16S@otu_table)), subset16S@phy_tree,include.root=T) # transposing for use in picante
 hmp.meta$Phylogenetic_Diversity <- df.pd$PD
 
-# Shortening names
-hmp.meta$Cox[hmp.meta$Cox == "narasinandnicarbazin(maxiban)"] = "Maxiban"
-hmp.meta$Cox[hmp.meta$Cox == "narasin(monteban)"] = "Monteban"
-hmp.meta$Cox[hmp.meta$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
-
 ggboxplot(hmp.meta,
           x = "Cox",
           y = "Phylogenetic_Diversity",
           fill = "Cox",
+          order = c("Maxiban","Sacox","None","Monteban"),
           palette = "lancet",
           ylab = "Phylogenetic Diversity",
           xlab = "Antimicrobial agent",
@@ -138,7 +133,7 @@ ggboxplot(div_df_melt, x = "Age", y = "value",
           scales = "free",
           title = "Alpha diversity metrics by age",
           outlier.shape = NA) + 
-  rremove("x.text") + stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
+  rremove("x.text") + stat_compare_means(method = "wilcox.test", size = 3.1) + geom_jitter(size = 0.7, alpha = 0.9)
 
 
 ggboxplot(hmp.meta,
@@ -196,41 +191,6 @@ ggboxplot(hmp.meta,
     label = "p.signif"
   ) + geom_jitter(size = 0.7, alpha = 0.9)
 
-# stable
-
-div.df2 <- div.df[, c("Stables", "diversity_inverse_simpson", "diversity_gini_simpson", "diversity_shannon", "observed", "diversity_coverage", "evenness_pielou")]
-colnames(div.df2) <- c("Stable", "Inverse Simpson", "Gini-Simpson", "Shannon", "Observed", "Coverage", "Pielou")
-
-div_df_melt <- reshape2::melt(div.df2)
-
-lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
-L.pairs <- combn(seq_along(lev), 2, simplify = FALSE, FUN = function(i) lev[i])
-
-
-ggboxplot(div_df_melt, x = "Stable", y = "value",
-          fill = "Stable",
-          palette = "lancet",
-          legend= "right",
-          facet.by = "variable",
-          scales = "free",
-          order = lev,
-          title = "Alpha diversity metrics by stable",
-          outlier.shape = NA) + rotate_x_text() + rremove("x.text") + geom_jitter(size = 0.7, alpha = 0.9)
-
-
-ggboxplot(hmp.meta,
-          x = "Stables",
-          y = "Phylogenetic_Diversity",
-          fill = "Stables",
-          palette = "lancet",
-          ylab = "Phylogenetic Diversity",
-          xlab = "Farm",
-          legend = "right",
-          title = "Phylogenetic diversity by stable",
-          outlier.shape = NA) + rotate_x_text() + 
-  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12),  
-        axis.title.x = element_blank()) + geom_jitter(size = 0.7, alpha = 0.9)
-
 
 # based on AB
 
@@ -264,6 +224,29 @@ ggboxplot(hmp.meta,
           outlier.shape = NA) + rotate_x_text() + 
   theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) +
   stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
+
+# based on stable and age
+
+div.df2 <- div.df[, c("Stables", "Age", "diversity_shannon")]
+colnames(div.df2) <- c("Stable", "Age", "Shannon")
+
+div_df_melt <- reshape2::melt(div.df2)
+
+lev = c("Stable1","Stable2","Stable3","Stable4","Stable5","Stable6","Stable7","Stable8","Stable9","Stable10")
+
+ggboxplot(div_df_melt, x = "Stable", y = "value",
+          fill = "Age",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          order = lev,
+          title = "Shannon diversity by stable and age",
+          xlab = FALSE,
+          ylab = FALSE,
+          outlier.shape = NA) + rotate_x_text() + 
+  theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12)) + geom_jitter(size = 0.7, alpha = 0.9)
+
 
 ## Looking at significance
 

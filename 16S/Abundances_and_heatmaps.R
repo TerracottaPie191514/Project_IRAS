@@ -337,7 +337,7 @@ sechm(tse_phylum,
       assayName = "clr",
       do.scale = TRUE,
       top_annotation = "AB", 
-      gaps_at = "AB",
+      gaps_at = "Stables",
       hmcols = viridis(256),
       cluster_cols = TRUE, cluster_rows = TRUE)
 
@@ -429,7 +429,7 @@ pheatmap(mat, annotation_row = taxa_clusters,
 
 tse = makeTreeSummarizedExperimentFromPhyloseq(subset16S)
 tse <- transformCounts(tse, method = "relabundance")
-tse <- transformCounts(tse, MARGIN = "samples", method = "clr", assay.type = "counts", pseudocount=1)
+tse <- transformCounts(tse, MARGIN = "samples", method = "clr", assay.type = "counts", pseudocount=1) # pseudocount aanpassen?
 tse <- transformCounts(tse, assay.type = "clr",
                               MARGIN = "features", 
                               method = "z", name = "clr_z")
@@ -444,7 +444,7 @@ sechm(tse,
       assayName = "clr", 
       do.scale = TRUE, 
       top_annotation = c("AB"), 
-      gaps_at = "AB",
+      gaps_at = "Stables",
       hmcols = viridis(256),
       cluster_cols = TRUE, cluster_rows = TRUE)
 

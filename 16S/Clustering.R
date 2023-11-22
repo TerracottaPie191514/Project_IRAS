@@ -7,7 +7,6 @@ library(NbClust) # To find out the optimal number of clusters.
 library(dendextend) # For creating dendrograms with additional options, labeling etc.
 library(factoextra) # Visualize optomial number of clusters.
 library(cluster) # For clustering algorithms, specifically used for PAM.
-#library(ecodist)
 
 # used the following guides: https://microbiome.github.io/OMA/clustering.html, https://microucph.github.io/amplicon_data_analysis/html/cluster.html, https://www.datacamp.com/tutorial/hierarchical-clustering-R, https://rpubs.com/TBrach/68544
 

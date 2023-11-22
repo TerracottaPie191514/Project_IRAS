@@ -54,6 +54,11 @@ pcoa_jaccard = ordinate(subset16S, "PCoA", "jaccard", binary=TRUE)
 plot_pcoa_ordination(subset16S, pcoa_bc, "Age", "PCoA Bray Curtis")
 plot_pcoa_ordination(subset16S, pcoa_bc, "Farm2", "PCoA Bray Curtis")
 
+# proper order of legend:
+plot_ordination(subset16S, pcoa_bc, color = "Farm2", shape = "AB") +
+  geom_point(size = 3) +
+  labs(title = "PCoA Bray Curtis", color = "Farm", shape = "Antibiotics used")
+
 plot_pcoa_ordination(subset16S, pcoa_unifrac, "Age", "PCoA Unifrac")
 plot_pcoa_ordination(subset16S, pcoa_unifrac, "Farm2", "PCoA Unifrac")
 
@@ -318,7 +323,7 @@ ggbarplot(df, x = "y", y = "x",
           rotate = TRUE,
           ggtheme = theme_minimal())
 
-# AB
+# Agent
 
 permanova_agent <- adonis(t(assay(tse, "relabundance")) ~ Cox, data = colData(tse), permutations = 9999)
 
