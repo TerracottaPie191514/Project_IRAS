@@ -264,7 +264,7 @@ tse <- transformCounts(tse, method = "relabundance")
 tse_phylum <- agglomerateByRank(tse,
                                rank = "Phylum",
                                onRankOnly = TRUE)
-tse_phylum <- transformCounts(tse_order,
+tse_phylum <- transformCounts(tse_phylum,
                              assay.type = "counts",
                              method = "relabundance")
 top_taxa <- getTopTaxa(tse_phylum,
@@ -320,7 +320,7 @@ tse_phylum <- agglomerateByRank(tse,
                                 rank = "Phylum",
                                 onRankOnly = TRUE)
 
-tse_phylum <- transformCounts(tse_phylum, MARGIN = "samples", method = "clr", assay.type = "counts", pseudocount=1)
+tse_phylum <- transformCounts(tse_phylum, MARGIN = "samples", method = "clr", assay.type = "counts", pseudocount=0.00001)
 tse_phylum <- transformCounts(tse_phylum, assay.type = "clr",
                               MARGIN = "features", 
                               method = "z", name = "clr_z")
@@ -339,7 +339,8 @@ sechm(tse_phylum,
       top_annotation = "AB", 
       gaps_at = "Stables",
       hmcols = viridis(256),
-      cluster_cols = TRUE, cluster_rows = TRUE)
+      cluster_cols = TRUE, cluster_rows = TRUE,
+      sortRowsOn=NULL)
 
 # Phylum heatmap
 mat <- assay(tse_phylum, "clr_z")

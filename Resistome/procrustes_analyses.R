@@ -17,7 +17,7 @@ plot_data <- data.frame(
 ggplot(plot_data) +
   geom_point(aes(x=MT_PC1, y=MT_PC2), color = "blue") +
   geom_segment(aes(x=MT_PC1,y=MT_PC2,xend=MG_PC1,yend=MG_PC2),arrow=arrow(type = "closed", length=unit(0.2,"cm"))) +
-  labs(title = "Procrustes Plot Metataxonomic vs metagenomic", x = "PC1", y = "PC2") + 
+  labs(title = "Procrustes Plot metagenomic vs. metataxonomic", x = "PC1", y = "PC2") + 
   scale_color_manual(values = c("16S" = "black", "MG" = "blue"))
 
 # plot with both points
@@ -48,7 +48,7 @@ ggplot(plot_data) +
   geom_segment(aes(x=R_PC1,y=R_PC2,xend=MG_PC1,yend=MG_PC2),arrow=arrow(type = "closed", length=unit(0.2,"cm"))) +
   scale_color_manual(values = c("16S" = "black", "MG" = "blue")) +
   guides(color = guide_legend(title = "Data Type")) +
-  labs(title = "Procrustes Plot Resistome vs Metagenome", x = "PC1", y = "PC2") 
+  labs(title = "Procrustes Plot resistomic vs. metagenomic", x = "PC1", y = "PC2") 
 
 # adds labels to see if samples line up
 ggplot(plot_data) +

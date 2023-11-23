@@ -494,7 +494,18 @@ sechm(tse_AMRClass,
       hmcols = viridis(256),
       cluster_cols = TRUE, cluster_rows = TRUE)
 
+
+
 # heatmap with AB and stable
+
+sechm(tse_AMRClass,
+      features = rownames(tse_AMRClass),
+      assayName = "clr",
+      do.scale = TRUE,
+      top_annotation = c("AB"), 
+      gaps_at = "Stables",
+      hmcols = viridis(256),
+      cluster_cols = TRUE, cluster_rows = TRUE)
 
 tse_AMRClass@metadata$anno_colors$Stable = (brewer.pal(n=10, name = "Set3"))
 

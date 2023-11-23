@@ -28,3 +28,7 @@ custom_no_conf <- subset_taxa(custom_no_conf, Domain!="k__Eukaryota")
 prebuilt
 custom_conf
 custom_no_conf
+
+plot_taxa_prevalence(custom_no_conf, "Phylum")
+plot_taxa_prevalence(prebuilt, "Phylum")
+plot_taxa_prevalence(subset16S, "Phylum")

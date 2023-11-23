@@ -213,7 +213,7 @@ plot_composition(subsetMG.rel, x.label = "Id") + theme(legend.position = "bottom
 # instead we will plot both 16S and MG data in the same figure
 
 # get the samples in the same order
-sample_names(subsetMG) = sample_names(subsetMG)
+sample_names(subset16S) = sample_names(subsetMG)
 
 dataset1 =  ps_filter(subset16S)
 dataset2 =  ps_filter(subsetMG)
@@ -320,6 +320,37 @@ sechm(tse_phylum,
       do.scale = TRUE,
       top_annotation = "AB", 
       gaps_at = "AB",
+      hmcols = viridis(256),
+      cluster_cols = TRUE, cluster_rows = TRUE)
+
+# heatmap with AB and stable
+tse_phylum@metadata$anno_colors$AB = c(yes = "darkred",no ="darkblue")
+
+sechm(tse_phylum,
+      features = rownames(tse_phylum),
+      assayName = "clr",
+      do.scale = TRUE,
+      top_annotation = c("AB"), 
+      gaps_at = "Stables",
+      hmcols = viridis(256),
+      cluster_cols = TRUE, cluster_rows = TRUE)
+
+# AB and agent
+sechm(tse_phylum,
+      features = rownames(tse_phylum),
+      assayName = "clr",
+      do.scale = TRUE,
+      top_annotation = c("AB"), 
+      gaps_at = "Cox",
+      hmcols = viridis(256),
+      cluster_cols = TRUE, cluster_rows = TRUE)
+# AB and age, we do see interesting shifts here
+sechm(tse_phylum,
+      features = rownames(tse_phylum),
+      assayName = "clr",
+      do.scale = TRUE,
+      top_annotation = c("AB"), 
+      gaps_at = "Age",
       hmcols = viridis(256),
       cluster_cols = TRUE, cluster_rows = TRUE)
 

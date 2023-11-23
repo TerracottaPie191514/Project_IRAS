@@ -332,13 +332,17 @@ wilcox.test(lib.div$diversity_coverage ~ sample_data(subset16S)$AB) # not signif
 boxplot(lib.div$diversity_fisher ~ sample_data(subset16S)$AB, ylab="fisher") # the boxplots are quite similar so this is not unexpected
 
 # used these functions to get means and sd per variable and alpha diversity metric
-#lib.div.ab = lib.div
-#lib.div.ab$AB = sample_data(subset16S)$AB
+lib.div.ab = lib.div
+lib.div.ab$AB = sample_data(subset16S)$AB
 
-aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=mean) 
-aggregate(lib.div.ab$observed, list(lib.div.ab$AB), FUN=sd) 
+aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$AB), FUN=mean) 
+aggregate(lib.div.ab$Phylogenetic_Diversity, list(lib.div.ab$AB), FUN=sd) 
 
+#lib.div.age = lib.div
+#lib.div.age$Age = sample_data(subset16S)$Age
 
+#aggregate(lib.div.age$Phylogenetic_Diversity, list(lib.div.age$Age), FUN=mean) 
+#aggregate(lib.div.age$Phylogenetic_Diversity, list(lib.div.age$Age), FUN=sd) 
 
 # AB does not seem to significantly differ in their alpha diversities except for observed and fisher diversity
 

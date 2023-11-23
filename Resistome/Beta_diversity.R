@@ -216,8 +216,12 @@ adonis2(t(assay(tse, "relabundance")) ~ Farm2, data = colData(tse), permutations
 adonis2(t(assay(tse, "relabundance")) ~ AgeParentStock, data = colData(tse), permutations = 9999)
 adonis2(t(assay(tse, "relabundance")) ~ Age, data = colData(tse), permutations = 9999)
 
+adonis2(t(assay(tse, "relabundance")) ~ ReadPerc, data = colData(tse), permutations = 9999)
+adonis2(t(assay(tse, "relabundance")) ~ ReadTot, data = colData(tse), permutations = 9999)
+
+
 # variances: AB: 0.0143, Cox: 0.1158, Researcher: 0.090, FP : 0.1224 , LitterType: 0.179, FT :0.030, Gender: 0.0067, 
-# Stable: 0.293, FS: 0.224 , Farm 0.207, APS : 0.246, Age: 0.0302
+# Stable: 0.293, FS: 0.224 , Farm 0.207, APS : 0.246, Age: 0.0302, readperc : 0.077, readtot : 0.044
 # Order: Stable>APS>FS>Farm>LT>FP>Cox>Researcher>Age>FT>AB>Gender
 
 # Mixed models
