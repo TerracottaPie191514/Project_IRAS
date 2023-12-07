@@ -201,7 +201,7 @@ adonis2(wunifrac.dist ~ Stables, data = metadf)
 
 #  same patterns
 
-jsd.dist <- distance(ps1.rel, "jsd")
+jsd.dist <- phyloseq::distance(ps1.rel, "jsd")
 
 adonis2(jsd.dist ~ Age, data = metadf)
 adonis2(jsd.dist ~ AB, data = metadf) 
@@ -214,7 +214,7 @@ adonis2(jsd.dist ~ Stables, data = metadf)
 
 # same is true for JSD
 
-bray.dist <- distance(ps1.rel, "bray")
+bray.dist <- phyloseq::distance(ps1.rel, "bray")
 
 adonis2(bray.dist ~ Age, data = metadf)
 adonis2(bray.dist ~ AB, data = metadf)
@@ -227,7 +227,7 @@ adonis2(bray.dist ~ Stables, data = metadf)
 
 # and BC
 
-jaccard.dist <- distance(ps1.rel, "jaccard")
+jaccard.dist <- phyloseq::distance(ps1.rel, "jaccard")
 
 adonis2(jaccard.dist ~ Age, data = metadf)
 adonis2(jaccard.dist ~ AB, data = metadf)

@@ -209,6 +209,18 @@ ggboxplot(div_df_melt, x = "AB", y = "value",
           outlier.shape = NA) + 
   rremove("x.text") + stat_compare_means() + geom_jitter(size = 0.7, alpha = 0.9)
 
+div.df2 <- div.df[, c("AB","diversity_shannon")]
+div_df_melt <- reshape2::melt(div.df2)
+
+ggboxplot(div_df_melt, x = "AB", y = "value",
+          fill = "AB",
+          palette = "lancet",
+          legend= "right",
+          facet.by = "variable",
+          scales = "free",
+          title = "Shannon diversity  by antibiotic usage",
+          outlier.shape = NA) + 
+  rremove("x.text") + geom_jitter(size = 0.7, alpha = 0.9)
 
 ggboxplot(hmp.meta,
           x = "AB",

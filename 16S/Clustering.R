@@ -196,12 +196,20 @@ if (all(sapply(cluster_assignments, identical, cluster_assignments[[1]]))) {
 # There are no differences in clusters when run 1000 times
 
 # save to metadata and make original PCoA plot
-subset16S@sam_data$PAM = pam.out
-sample_data(subset16S)$PAM = as.factor(sample_data(subset16S)$PAM)
+subset16S@sam_data$PAM_clust = pam.out
+sample_data(subset16S)$PAM_clust = as.factor(sample_data(subset16S)$PAM_clust)
 pcoa_bc = ordinate(subset16S, "PCoA", "bray")
 
-plot_pcoa_ordination(subset16S, pcoa_bc, "PAM", "PCoA Bray Curtis")
-plot_pcoa_ordination(subset16S, pcoa_bc, "Cluster", "PCoA Bray Curtis")
+plot_pcoa_ordination(subset16S, pcoa_bc, "PAM_clust", "PCoA Bray Curtis")
+#plot_pcoa_ordination(subset16S, pcoa_bc, "Cluster", "PCoA Bray Curtis")
+
+# change shape to different variables, age
+plot_ordination(subset16S, pcoa_bc, color = "PAM", shape = "Age") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
+
+# change shape to different variables, farm
+plot_ordination(subset16S, pcoa_bc, color = "PAM", shape = "Farm2") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
 
 
 # Create PAM PCoA - from 2 to 10 clusters

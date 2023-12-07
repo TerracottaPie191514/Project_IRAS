@@ -204,6 +204,18 @@ pcoa_bc = ordinate(Rps, "PCoA", "bray")
 plot_pcoa_ordination(Rps, pcoa_bc, "PAM", "PCoA Bray Curtis")
 plot_pcoa_ordination(Rps, pcoa_bc, "Cluster", "PCoA Bray Curtis")
 
+# change shape to different variables, age
+plot_ordination(Rps, pcoa_bc, color = "PAM", shape = "Age") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
+
+# change shape to different variables, farm
+plot_ordination(Rps, pcoa_bc, color = "PAM", shape = "Farm2") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
+
+# change shape to different variables, stable
+plot_ordination(Rps, pcoa_bc, color = "Stable", shape = "PAM") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
+
 
 # Create PAM PCoA - from 2 to 10 clusters
 phy_rel <- transform_sample_counts(Rps, function(x) log10(x+1/sum(x+1)))

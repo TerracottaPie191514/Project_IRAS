@@ -63,11 +63,11 @@ vegan::rarecurve(otu_tab2,
 # rarefaction curves of TPM data are all converging towards the plateau, no rarefaction required
 
 
-# we use Good's coverage test to see the amount of singletons in the samples
+# we use Good's coverage test to see the amount of singletons in the samples (might have to add round())
 
-summary(goods(otu_tab3)) # on average, 0.65% of the reads in the samples are singletons for mp 
+summary(goods(round(otu_tab3))) # on average, 0.65% of the reads in the samples are singletons for mp 
 
-summary(goods(otu_tab)) # on average, 0.31% of the reads in the samples are singletons for k2
+summary(goods(round(otu_tab))) # on average, 0.31% of the reads in the samples are singletons for k2 
 
 summary(goods(otu_tab2)) # there are no singletons in tpm
 
@@ -580,28 +580,15 @@ plot(log(lib.div$diversity_gini_simpson) ~ sample_data(Rps)$Conc...ng..µl., yla
 abline(qp.gini_simpson.conc)
 
 
-# Mixed models, variables might not be independent
+# Mixed models, variables might not be independent (out of scope)
 
-aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age*sample_data(Rps)$Farm2)
-summary(aov.shannon.age_farm)
+#aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age*sample_data(Rps)$Farm2)
+#summary(aov.shannon.age_farm)
 
-aov.shannon.age_farm = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age+sample_data(Rps)$Farm2)
-summary(aov.shannon.age_farm)
+# repeated measures
 
-aov.shannon.age_AB = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age*sample_data(Rps)$AB)
-summary(aov.shannon.age_AB)
-
-aov.shannon.age_AB = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age+sample_data(Rps)$AB)
-summary(aov.shannon.age_AB)
-
-
-aov.shannon.age_all = aov(lib.div$diversity_shannon ~ sample_data(Rps)$Age*sample_data(Rps)$AB*sample_data(Rps)$Farm2*sample_data(Rps)$Cox*sample_data(Rps)$FarmRoundStable)
-summary(aov.shannon.age_all)
-
-# repeated measures, look at second guide to figure this out
-
-rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(Rps)$AB + (1|sample_data(Rps)$Farm2))
-summary(rm.shannon.all)
+#rm.shannon.all = lmer(lib.div$diversity_shannon ~ sample_data(Rps)$AB + (1|sample_data(Rps)$Farm2))
+#summary(rm.shannon.all)
 
 # declutter R environment by removing objects that no longer serve a purpose
 rm(p1, p2, p3, p4, ps0.rar, otu_tab, otu_tab2, L.pairs, pscopy, ps_tpmcopy, pval, lev, aov.chao1.farm, aov.fisher.farm, 

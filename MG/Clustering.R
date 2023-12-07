@@ -158,6 +158,9 @@ dend <- color_branches(dendro, k = 2, col = unlist(col_val_map))
 labels(dend) <- NULL
 plot(dend) # very similar to 16S scripts: based on two visualisations, only a few samples are clustered distinctly, 
 # based on splitting at the root, which is not informative. this particular plot splits it more down the middle# PAM clustering
+labels_colors(hcd) <- colorCode[pam.out][order.dendrogram(hcd)]
+plot(hcd)
+
 
 tse = makeTreeSummarizedExperimentFromPhyloseq(subsetMG)
 
@@ -170,8 +173,52 @@ pam.out <- clusterCells(tse,
 
 pam.out
 
-labels_colors(hcd) <- colorCode[pam.out][order.dendrogram(hcd)]
-plot(hcd)
+
+n_iterations <- 1000
+previous_cluster_assignment <- NULL
+cluster_assignments <- list()
+
+# loop that runs PAM clusterings X times and stores the results in a list, additionally checks if any clusters have changed
+for (i in 1:n_iterations) {
+  result <- clusterCells(tse, assay.type = "relabundance", BLUSPARAM = PamParam(centers = 2))
+  cluster_assignments[[i]] <- result
+  
+  # Check if cluster assignments have changed
+  if (!is.null(previous_cluster_assignment)) {
+    samples_changed <- which(result != previous_cluster_assignment)
+    if (length(samples_changed) > 0) {
+      cat(sprintf("In iteration %d, the following samples changed clusters: %s\n", i, paste(samples_changed, collapse = ", ")))
+    }
+  }
+  previous_cluster_assignment <- result
+}
+
+# To see if all of the clusters are the same or not
+if (all(sapply(cluster_assignments, identical, cluster_assignments[[1]]))) {
+  cat("All cluster assignments are the same across iterations.\n")
+} else {
+  cat("Cluster assignments vary across iterations.\n")
+}
+
+# There are no differences in clusters when run 1000 times
+
+# save to metadata and make original PCoA plot
+subsetMG@sam_data$PAM_clust = pam.out
+sample_data(subsetMG)$PAM_clust = as.factor(sample_data(subsetMG)$PAM_clust)
+pcoa_bc = ordinate(subsetMG, "PCoA", "bray")
+
+plot_pcoa_ordination(subsetMG, pcoa_bc, "PAM_clust", "PCoA Bray Curtis")
+#plot_pcoa_ordination(subsetMG, pcoa_bc, "Cluster", "PCoA Bray Curtis")
+
+# change shape to different variables, age
+plot_ordination(subsetMG, pcoa_bc, color = "PAM_clust", shape = "Age") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
+
+# change shape to different variables, farm
+plot_ordination(subsetMG, pcoa_bc, color = "PAM_clust", shape = "Farm2") + 
+  geom_point(size = 3)  + labs(title = "PCoA Bray curtis", color = "AMR_class_primary")
+
+
 
 # Create PAM PCoA - from 2 to 10 clusters
 phy_rel <- transform_sample_counts(subsetMG, function(x) log10(x+1/sum(x+1)))

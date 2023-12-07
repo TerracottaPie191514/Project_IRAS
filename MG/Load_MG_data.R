@@ -100,4 +100,4 @@ subsetMG@sam_data$Cox[subsetMG@sam_data$Cox == "narasin(monteban)"] = "Monteban"
 subsetMG@sam_data$Cox[subsetMG@sam_data$Cox == "salinomycin(Sacox120microGranulate)"] = "Sacox"
 
 # declutter R environment by removing objects that no longer serve a purpose
-rm(meta_data, firm_names, meta_data_MG, microbial_load, random_tree,) 
+rm(meta_data, firm_names, meta_data_MG, microbial_load, random_tree) 
