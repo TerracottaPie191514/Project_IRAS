@@ -38,7 +38,10 @@ Rps %>% ps_filter(FarmRoundStable == c("Farm2R1S2")) %>% plot_bar(fill="AMR_clas
 ps_prim <- phyloseq::tax_glom(Rps_copy, "Phylum")
 taxa_names(ps_prim) <- phyloseq::tax_table(ps_prim)[, "Phylum"]
 
-psmelt(ps_prim) %>% # AB
+ps_prim <- subset_taxa(Rps,Phylum %in% c("p__Actinomycetota", "p__Bacillota", "p__Bacteroidota", "p__Campylobacterota", "p__Pseudomonadota", "p__Verrucomicrobiota"))  %>% aggregate_top_taxa2("Phylum", top = 6) %>% phyloseq::tax_glom("Phylum") 
+
+
+psmelt(ps_prim %>%  subset_taxa(!Phylum %in% c("Not determined", "Fosfomycin", "Quinolone", "Streptogramin"))) %>% # AB
   ggplot(data = ., aes(x = AB, y = Abundance)) +
   geom_boxplot(outlier.shape  = NA) +
   geom_jitter(aes(color = Phylum), height = 0, width = .2) +
@@ -59,12 +62,13 @@ psmelt(ps_prim) %>% # Farm
   facet_wrap(~ Phylum, scales = "free") +
   labs(x = "", y = "Abundance\n", color = "Primary AMR class") 
 
-psmelt(ps_prim) %>% # Stable
-  ggplot(data = ., aes(x = Stables, y = Abundance)) +
+psmelt(ps_prim) %>%  # Stable
+  ggplot(data = ., aes(x = Stable, y = Abundance)) +
   geom_boxplot(outlier.shape  = NA) +
   geom_jitter(aes(color = Phylum), height = 0, width = .2) +
   facet_wrap(~ Phylum, scales = "free") +
-  labs(x = "", y = "Abundance\n", color = "Primary AMR class") 
+  labs(x = "", y = "Abundance\n", color = "Primary AMR class") + 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12))
 
 psmelt(ps_prim) %>% # Agent
   ggplot(data = ., aes(x = Cox, y = Abundance)) +
